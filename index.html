@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dashboard - YourDriver</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .panel-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .leaflet-routing-container { display: none !important; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800 font-sans antialiased h-screen w-screen overflow-hidden m-0 p-0 flex items-center justify-center">
+
+    <script>
+        const loggedUser = localStorage.getItem('yd_logged_in_user');
+        if (!loggedUser) {
+            alert("Sesi Anda telah habis atau belum masuk. Silakan login terlebih dahulu.");
+            window.location.href = 'login.html';
+        }
+    </script>
+
+    <div id="main-card" class="w-full max-w-md h-full md:h-[90vh] md:max-h-[850px] bg-white md:rounded-3xl shadow-2xl flex flex-col justify-between overflow-hidden relative border border-slate-100">
+        
+        <!-- BAGIAN 1: FORMULIR UTAMA -->
+        <div id="form-section" class="flex-1 flex flex-col justify-between overflow-y-auto px-6 py-6 custom-scrollbar z-10 bg-white">
+            <div>
+                <!-- Brand & Logo + Tombol Logout -->
+                <div class="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
+                    <div class="flex items-center space-x-3">
+                        <img src="logo.png" alt="YourDriver Logo" class="w-10 h-10 object-contain rounded-xl shadow-md border border-blue-100 bg-blue-50" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><circle cx=\'50\' cy=\'50\' r=\'45\' fill=\'%232563eb\'/><text x=\'50\' y=\'55\' font-size=\'35\' fill=\'white\' text-anchor=\'middle\' font-weight=\'bold\'>YD</text></svg>'">
+                        <div>
+                            <span class="text-xl font-black tracking-tight text-slate-900">Your<span class="text-blue-600">Driver</span></span>
+                            <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Halo, <span id="user-display-name" class="text-blue-600">Pengguna</span></p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="handleLogout()" class="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider border border-red-100 transition shadow-xs">
+                        <i class="fa-solid fa-right-from-bracket mr-1"></i> Keluar
+                    </button>
+                </div>
+
+                <!-- Pilihan Layanan -->
+                <div class="grid grid-cols-3 gap-2.5 mb-5">
+                    <button type="button" onclick="selectService('ride')" id="btn-ride" class="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-blue-600 bg-blue-50/40 transition shadow-sm">
+                        <i class="fa-solid fa-motorcycle text-blue-600 text-base mb-1"></i>
+                        <span class="text-[11px] font-bold text-slate-700">YourRide</span>
+                    </button>
+                    <button type="button" onclick="selectService('car')" id="btn-car" class="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 transition">
+                        <i class="fa-solid fa-car text-slate-500 text-base mb-1"></i>
+                        <span class="text-[11px] font-semibold text-slate-600">YourCar</span>
+                    </button>
+                    <button type="button" onclick="selectService('food')" id="btn-food" class="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 transition">
+                        <i class="fa-solid fa-utensils text-slate-500 text-base mb-1"></i>
+                        <span class="text-[11px] font-semibold text-slate-600">YourFood</span>
+                    </button>
+                </div>
+
+                <!-- Form Lokasi -->
+                <form id="order-form" onsubmit="handleOrder(event)" class="space-y-4">
+                    <div class="p-3 border-2 border-blue-600 rounded-xl bg-blue-50/10 shadow-sm space-y-1.5">
+                        <div class="flex items-center justify-between text-[11px] font-bold text-blue-900 px-1">
+                            <span>LOKASI PENJEMPUTAN</span>
+                            <span class="text-[10px] text-slate-400 font-normal" id="pickup-label-status">Pilih di peta...</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="relative flex-1">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="w-2.5 h-2.5 bg-blue-600 rounded-full ring-4 ring-blue-100"></span></div>
+                                <input type="text" id="pickup-input" placeholder="Klik tombol Peta..." readonly required
+                                    class="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer" onclick="openMapModal('pickup')">
+                            </div>
+                            <button type="button" onclick="openMapModal('pickup')" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow transition">Peta</button>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border-2 border-slate-200 rounded-xl bg-slate-50/50 shadow-sm space-y-1.5">
+                        <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 px-1">
+                            <span>LOKASI TUJUAN</span>
+                            <span class="text-[10px] text-slate-400 font-normal" id="dest-label-status">Pilih di peta...</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="relative flex-1">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="w-2.5 h-2.5 bg-red-500 rounded-full ring-4 ring-red-100"></span></div>
+                                <input type="text" id="dest-input" placeholder="Klik tombol Peta..." readonly required
+                                    class="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer" onclick="openMapModal('dest')">
+                            </div>
+                            <button type="button" onclick="openMapModal('dest')" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow transition">Peta</button>
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 shadow-inner">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">ESTIMASI TARIF</span>
+                            <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">Normal</span>
+                        </div>
+                        <div class="flex justify-between items-end">
+                            <div><p class="text-lg font-black text-slate-900"><span id="distance-val">0.0</span> km <span class="text-[11px] font-medium text-slate-500">(<span id="duration-val">0</span> mnt)</span></p></div>
+                            <div class="text-right">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase">Total Estimasi</p>
+                                <p class="text-lg font-black text-blue-600" id="fare-val">Rp 0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center space-x-2 text-xs md:text-sm tracking-wide">
+                        <span>Pesan YourDriver Sekarang</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div class="pt-4 text-center border-t border-slate-100 mt-4">
+                <p class="text-[10px] text-slate-400 font-semibold">YourDriver System © 2026</p>
+            </div>
+        </div>
+
+        <!-- BAGIAN 2: STATUS AKTIF PERJALANAN & PETA -->
+        <div id="active-order-section" class="hidden absolute inset-0 w-full h-full flex flex-col justify-between z-20">
+            <div class="absolute inset-0 w-full h-full z-0"><div id="live-map" class="w-full h-full"></div></div>
+
+            <div class="relative z-30 p-4 pointer-events-none">
+                <div class="pointer-events-auto bg-slate-900/85 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-lg flex items-center justify-between border border-slate-700/50">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping"></span>
+                        <span class="text-xs font-bold tracking-wide" id="active-status-title">Mencari rute jalan raya...</span>
+                    </div>
+                    <span class="text-[10px] bg-blue-600/40 text-blue-200 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-blue-400/30">Live Rute</span>
+                </div>
+            </div>
+
+            <div id="bottom-panel" class="relative z-30 mt-auto bg-white/95 backdrop-blur-md px-5 pt-3 pb-5 rounded-t-3xl shadow-2xl border-t border-slate-100 panel-transition">
+                <div class="flex justify-center pb-2 cursor-pointer" onclick="toggleMinimizePanel()">
+                    <div class="w-10 h-1.5 bg-slate-300 rounded-full hover:bg-slate-400 transition"></div>
+                </div>
+
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Rincian Perjalanan</h3>
+                    <button type="button" onclick="toggleMinimizePanel()" class="text-[11px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
+                        <span id="minimize-text">Minimize ▾</span>
+                    </button>
+                </div>
+
+                <div id="panel-content" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="p-3 bg-blue-50/60 rounded-xl border border-blue-100 text-center">
+                            <p class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Sisa Jarak & Waktu</p>
+                            <p class="text-sm font-black text-slate-900"><span id="active-dist">3.8</span> km</p>
+                            <p class="text-[11px] font-bold text-blue-600" id="active-duration">11 Menit</p>
+                        </div>
+                        <div class="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 text-center">
+                            <p class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Total Biaya Perjalanan</p>
+                            <p class="text-sm font-black text-emerald-700" id="active-fare">Rp 28.200</p>
+                            <p class="text-[9px] font-semibold text-slate-500">Tunai / QRIS</p>
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 shadow-xs">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[9px] font-bold text-blue-700 bg-white px-2 py-0.5 rounded shadow-xs border border-slate-200">Driver Profesional</span>
+                            <span class="text-xs font-extrabold text-slate-700 tracking-wider">B 4281 FGY</span>
+                        </div>
+                        <div class="flex items-center space-x-3 mb-3">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150" alt="Driver" class="w-12 h-12 rounded-full object-cover border-2 border-blue-600 shadow">
+                            <div class="flex-1">
+                                <h4 class="font-bold text-slate-900 text-xs">Ahmad Fauzi</h4>
+                                <p class="text-[10px] text-slate-500">Yamaha Nmax • Hitam Metalik</p>
+                                <div class="flex items-center mt-0.5 text-amber-500 text-[11px] font-bold">
+                                    <i class="fa-solid fa-star mr-1"></i> 4.98 <span class="text-slate-400 font-normal ml-1">(2.4k ulasan)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 pt-2.5 border-t border-slate-200/80">
+                            <button type="button" onclick="alert('Menghubungkan ke driver...')" class="py-1.5 bg-white hover:bg-blue-50 text-blue-700 border border-slate-200 rounded-lg transition text-[10px] font-bold shadow-xs"><i class="fa-solid fa-phone mr-1"></i> Telepon</button>
+                            <button type="button" onclick="prompt('Kirim pesan ke driver:')" class="py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition text-[10px] font-bold shadow-xs"><i class="fa-solid fa-comment-dots mr-1"></i> Chat</button>
+                            <button type="button" onclick="cancelOrder()" class="py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-lg transition text-[10px] font-bold shadow-xs"><i class="fa-solid fa-ban mr-1"></i> Batal</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL PETA PEMILIHAN -->
+    <div id="map-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-3 md:p-6">
+        <div class="bg-white rounded-3xl max-w-2xl w-full h-[85vh] flex flex-col overflow-hidden shadow-2xl relative">
+            <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-bold" id="map-modal-title">Pilih Lokasi di Peta</h3>
+                    <p class="text-[10px] text-slate-400">Ketuk titik lokasi pada peta untuk menyematkan pin</p>
+                </div>
+                <button type="button" onclick="closeMapModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-xs"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="flex-1 relative"><div id="picker-map" style="height: 100%; width: 100%;"></div></div>
+            <div class="p-3 bg-white border-t border-slate-100 text-center">
+                <button type="button" onclick="confirmMapSelection()" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md">Konfirmasi Titik Ini</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PEMBAYARAN & RATING -->
+    <div id="rating-modal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border border-slate-100">
+            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-lg mx-auto mb-3 shadow-inner"><i class="fa-solid fa-circle-check"></i></div>
+            <h3 class="text-base font-black text-slate-900 mb-0.5">Perjalanan Selesai!</h3>
+            <p class="text-[11px] text-slate-500 mb-4">Silakan pilih metode pembayaran dan berikan ulasan driver.</p>
+            
+            <div class="mb-4 text-left">
+                <label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Metode Pembayaran</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="selectPayment('cash')" id="pay-cash" class="p-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-xs font-bold flex items-center justify-center space-x-1.5 transition"><i class="fa-solid fa-money-bill-wave"></i><span>Tunai</span></button>
+                    <button type="button" onclick="selectPayment('qris')" id="pay-qris" class="p-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-xs font-semibold flex items-center justify-center space-x-1.5 transition"><i class="fa-solid fa-qrcode"></i><span>QRIS</span></button>
+                </div>
+            </div>
+
+            <div class="mb-5 text-left">
+                <label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Beri Rating Driver</label>
+                <div class="flex justify-center space-x-2 py-1 bg-slate-50 rounded-xl border border-slate-100">
+                    <button type="button" onclick="setRating(1)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
+                    <button type="button" onclick="setRating(2)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
+                    <button type="button" onclick="setRating(3)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
+                    <button type="button" onclick="setRating(4)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
+                    <button type="button" onclick="setRating(5)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
+                </div>
+            </div>
+
+            <button type="button" onclick="completeTripAndReset()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition text-xs">Bayar & Beri Ulasan</button>
+        </div>
+    </div>
+
+    <!-- Scripts Leaflet & Logic -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    
+    <script>
+        document.getElementById('user-display-name').innerText = loggedUser;
+
+        function handleLogout() {
+            if (confirm("Apakah Anda ingin keluar dari akun?")) {
+                localStorage.removeItem('yd_logged_in_user');
+                window.location.href = 'login.html';
+            }
+        }
+
+        let pickerMap = null, liveMap = null, activeTargetType = null, tempCoords = null, pickupCoords = null, destCoords = null;
+        let pickerMarker = null, liveDriverMarker = null, routingControl = null, isMinimized = false;
+        let selectedPaymentMethod = 'cash', currentRating = 5;
+
+        function selectService(type) {
+            ['ride', 'car', 'food'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                btn.className = "flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 transition";
+                btn.querySelector('i').className = btn.querySelector('i').className.replace('text-blue-600', 'text-slate-500');
+                btn.querySelector('span').className = "text-[11px] font-semibold text-slate-600";
+            });
+            const activeBtn = document.getElementById(`btn-${type}`);
+            activeBtn.className = "flex flex-col items-center justify-center p-3 rounded-xl border-2 border-blue-600 bg-blue-50/40 transition shadow-sm";
+            activeBtn.querySelector('i').className = activeBtn.querySelector('i').className.replace('text-slate-500', 'text-blue-600');
+            activeBtn.querySelector('span').className = "text-[11px] font-bold text-slate-700";
+            document.querySelector('#submit-btn span').innerText = `Pesan Your${type.charAt(0).toUpperCase() + type.slice(1)} Sekarang`;
+        }
+
+        function openMapModal(type) {
+            activeTargetType = type;
+            document.getElementById('map-modal').classList.remove('hidden');
+            document.getElementById('map-modal-title').innerText = type === 'pickup' ? "Pilih Lokasi Penjemputan" : "Pilih Lokasi Tujuan";
+            setTimeout(() => {
+                if (!pickerMap) {
+                    pickerMap = L.map('picker-map', { zoomControl: false }).setView([-6.1754, 106.8272], 13);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(pickerMap);
+                    L.control.zoom({ position: 'topright' }).addTo(pickerMap);
+                    pickerMap.on('click', function(e) {
+                        tempCoords = [e.latlng.lat, e.latlng.lng];
+                        if (pickerMarker) pickerMap.removeLayer(pickerMarker);
+                        pickerMarker = L.marker(tempCoords, {
+                            icon: L.divIcon({ html: `<div style="background-color:${activeTargetType === 'pickup' ? '#2563eb' : '#ef4444'};width:16px;height:16px;border:3px solid white;border-radius:50%;box-shadow:0 3px 6px rgba(0,0,0,0.4)"></div>` })
+                        }).addTo(pickerMap);
+                    });
+                } else { pickerMap.invalidateSize(); }
+            }, 200);
+        }
+
+        function closeMapModal() { document.getElementById('map-modal').classList.add('hidden'); }
+
+        function confirmMapSelection() {
+            if (!tempCoords) { alert("Ketuk titik di peta terlebih dahulu."); return; }
+            const label = `Lokasi (${tempCoords[0].toFixed(4)}, ${tempCoords[1].toFixed(4)})`;
+            if (activeTargetType === 'pickup') {
+                pickupCoords = tempCoords;
+                document.getElementById('pickup-input').value = label;
+                document.getElementById('pickup-label-status').innerText = "Terpilih ✓";
+            } else {
+                destCoords = tempCoords;
+                document.getElementById('dest-input').value = label;
+                document.getElementById('dest-label-status').innerText = "Terpilih ✓";
+            }
+            tempCoords = null;
+            closeMapModal();
+            calculateEstimate();
+        }
+
+        function calculateEstimate() {
+            if (pickupCoords && destCoords) {
+                const dist = 3.8;
+                document.getElementById('distance-val').innerText = dist.toFixed(1);
+                document.getElementById('duration-val').innerText = "11";
+                document.getElementById('fare-val').innerText = `Rp ${(dist * 6500 + 3500).toLocaleString('id-ID')}`;
+            }
+        }
+
+        function toggleMinimizePanel() {
+            isMinimized = !isMinimized;
+            document.getElementById('panel-content').classList.toggle('hidden', isMinimized);
+            document.getElementById('minimize-text').innerText = isMinimized ? "Maximize ▴" : "Minimize ▾";
+            document.getElementById('bottom-panel').style.transform = isMinimized ? "translateY(70%)" : "translateY(0)";
+        }
+
+        function selectPayment(method) {
+            selectedPaymentMethod = method;
+            document.getElementById('pay-cash').className = method === 'cash' ? "p-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-xs font-bold flex items-center justify-center space-x-1.5 transition" : "p-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-xs font-semibold flex items-center justify-center space-x-1.5 transition";
+            document.getElementById('pay-qris').className = method === 'qris' ? "p-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-xs font-bold flex items-center justify-center space-x-1.5 transition" : "p-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-xs font-semibold flex items-center justify-center space-x-1.5 transition";
+        }
+
+        function setRating(score) {
+            currentRating = score;
+            document.querySelectorAll('.star-btn').forEach((star, idx) => {
+                star.className = idx < score ? "star-btn text-amber-400 text-xl" : "star-btn text-slate-300 text-xl";
+            });
+        }
+
+        function handleOrder(e) {
+            e.preventDefault();
+            if (!pickupCoords || !destCoords) { alert("Pilih titik jemput dan tujuan."); return; }
+            document.getElementById('form-section').classList.add('hidden');
+            document.getElementById('active-order-section').classList.remove('hidden');
+
+            document.getElementById('active-dist').innerText = document.getElementById('distance-val').innerText;
+            document.getElementById('active-duration').innerText = document.getElementById('duration-val').innerText + " Menit";
+            document.getElementById('active-fare').innerText = document.getElementById('fare-val').innerText;
+
+            setTimeout(() => {
+                if (!liveMap) {
+                    liveMap = L.map('live-map', { zoomControl: false }).setView(pickupCoords, 14);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(liveMap);
+                } else { liveMap.invalidateSize(); }
+
+                let driverStart = [pickupCoords[0] + 0.005, pickupCoords[1] + 0.005];
+                L.marker(pickupCoords, { icon: L.divIcon({ html: '<div style="background-color:#2563eb;width:14px;height:14px;border:3px solid white;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.3)"></div>' }) }).addTo(liveMap);
+                L.marker(destCoords, { icon: L.divIcon({ html: '<div style="background-color:#ef4444;width:14px;height:14px;border:3px solid white;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.3)"></div>' }) }).addTo(liveMap);
+
+                liveDriverMarker = L.marker(driverStart, {
+                    icon: L.divIcon({ className: 'driver-live', html: '<div style="background-color:#1e293b;color:white;padding:6px;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 8px rgba(0,0,0,0.4);font-size:14px;"><i class="fa-solid fa-motorcycle"></i></div>' })
+                }).addTo(liveMap);
+
+                runTripPhases(driverStart, pickupCoords, destCoords);
+            }, 200);
+        }
+
+        function runTripPhases(driverStart, pickup, destination) {
+            document.getElementById('active-status-title').innerText = "Driver sedang menuju lokasi penjemputan";
+            executeRouteSimulation(driverStart, pickup, function() {
+                document.getElementById('active-status-title').innerText = "Driver Tiba di Penjemputan. Menunggu Penumpang...";
+                setTimeout(function() {
+                    document.getElementById('active-status-title').innerText = "Perjalanan Menuju Lokasi Tujuan";
+                    executeRouteSimulation(pickup, destination, function() {
+                        document.getElementById('active-status-title').innerText = "Tiba di Tujuan 🎉";
+                        document.getElementById('rating-modal').classList.remove('hidden');
+                    });
+                }, 3000);
+            });
+        }
+
+        function executeRouteSimulation(startCoord, endCoord, callback) {
+            if (routingControl) liveMap.removeControl(routingControl);
+            routingControl = L.Routing.control({
+                waypoints: [L.latLng(startCoord[0], startCoord[1]), L.latLng(endCoord[0], endCoord[1])],
+                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+                lineOptions: { styles: [{ color: '#2563eb', opacity: 0.8, weight: 5 }] },
+                addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true
+            }).addTo(liveMap);
+
+            routingControl.on('routesfound', function(e) {
+                const coords = e.routes[0].coordinates;
+                let index = 0;
+                function move() {
+                    if (index < coords.length) {
+                        liveDriverMarker.setLatLng([coords[index].lat, coords[index].lng]);
+                        index++;
+                        setTimeout(move, 40);
+                    } else if (callback) { callback(); }
+                }
+                move();
+            });
+        }
+
+        function cancelOrder() { if (confirm("Batalkan pesanan?")) resetApp(); }
+        function completeTripAndReset() { alert(`Pembayaran via ${selectedPaymentMethod.toUpperCase()} berhasil! Rating ${currentRating} bintang disimpan.`); resetApp(); }
+
+        function resetApp() {
+            isMinimized = false;
+            document.getElementById('bottom-panel').style.transform = "translateY(0)";
+            document.getElementById('panel-content').classList.remove('hidden');
+            document.getElementById('minimize-text').innerText = "Minimize ▾";
+            document.getElementById('rating-modal').classList.add('hidden');
+            document.getElementById('active-order-section').classList.add('hidden');
+            document.getElementById('form-section').classList.remove('hidden');
+            document.getElementById('pickup-input').value = "";
+            document.getElementById('dest-input').value = "";
+            document.getElementById('pickup-label-status').innerText = "Pilih di peta...";
+            document.getElementById('dest-label-status').innerText = "Pilih di peta...";
+            document.getElementById('distance-val').innerText = "0.0";
+            document.getElementById('duration-val').innerText = "0";
+            document.getElementById('fare-val').innerText = "Rp 0";
+            pickupCoords = null; destCoords = null; tempCoords = null;
+            if (pickerMarker && pickerMap) pickerMap.removeLayer(pickerMarker);
+            if (routingControl && liveMap) liveMap.removeControl(routingControl);
+        }
+    </script>
+</body>
+</html>
