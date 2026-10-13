@@ -1,8 +1,125 @@
+
 <!doctype html>
-<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Back Office — YourDriver</title><link rel="stylesheet" href="../yd-addons.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="../yd-config.js"></script><script defer src="dashboard.js"></script></head>
-<body><header class="topbar"><a class="brand" href="../index.html"><img src="../logo.png" alt="" onerror="this.style.display='none'"><span>YourDriver <small>BACK OFFICE</small></span></a><button id="logoutBtn" class="btn btn-small">Keluar</button></header>
-<main class="wrap dashboard"><section class="hero"><span class="eyebrow">PANEL ADMINISTRATOR</span><h1>Manajemen pendaftaran driver</h1><p>Periksa data calon driver dan ubah status seleksi. Buka dokumen hanya jika diperlukan.</p></section>
-<div class="stats"><article class="stat"><span>Total pendaftar</span><strong id="totalCount">—</strong></article><article class="stat"><span>Menunggu</span><strong id="pendingCount">—</strong></article><article class="stat"><span>Diterima</span><strong id="acceptedCount">—</strong></article><article class="stat"><span>Ditolak</span><strong id="rejectedCount">—</strong></article></div>
-<section class="panel"><div class="toolbar"><h2>Daftar pendaftar</h2><select id="statusFilter" aria-label="Filter status"><option value="all">Semua status</option><option value="pending">Menunggu</option><option value="review">Sedang ditinjau</option><option value="accepted">Diterima</option><option value="rejected">Ditolak</option></select><button id="refreshBtn" class="btn btn-small btn-light">Muat ulang</button></div><p id="dashboardMessage" class="message" role="status"></p><div class="table-scroll"><table><thead><tr><th>Nama / Registrasi</th><th>Kontak</th><th>Identitas</th><th>Dokumen</th><th>Status</th><th>Tindakan</th></tr></thead><tbody id="applicantsBody"><tr><td colspan="6">Memuat data…</td></tr></tbody></table></div></section>
-<section id="detailPanel" class="panel hidden"><div class="toolbar"><h2>Detail pendaftar</h2><button id="closeDetail" class="btn btn-small btn-light">Tutup</button></div><div id="detailContent"></div></section>
-</main><footer>YourDriver · Admin Back Office</footer></body></html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Back Office — YourDriver</title>
+<link rel="stylesheet" href="../yd-addons.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../yd-config.js"></script>
+<script defer src="dashboard.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="../index.html">
+    <img src="../logo.png" alt="" onerror="this.style.display='none'">
+    <span>YourDriver <small>BACK OFFICE</small></span>
+  </a>
+  <button id="logoutBtn" class="btn btn-small">Keluar</button>
+</header>
+
+<main class="wrap dashboard">
+  <section class="hero">
+    <span class="eyebrow">PANEL ADMINISTRATOR</span>
+    <h1>Dashboard Admin</h1>
+    <p>Pantau pendaftaran mitra driver, pesanan, dan aktivitas yang tercatat.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Ringkasan pendaftaran driver</h2>
+    <div class="stats">
+      <article class="stat"><span>Total pendaftar</span><strong id="totalCount">—</strong></article>
+      <article class="stat"><span>Menunggu</span><strong id="pendingCount">—</strong></article>
+      <article class="stat"><span>Diterima</span><strong id="acceptedCount">—</strong></article>
+      <article class="stat"><span>Ditolak</span><strong id="rejectedCount">—</strong></article>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="toolbar">
+      <h2>Daftar pendaftar</h2>
+      <select id="statusFilter" aria-label="Filter status">
+        <option value="all">Semua status</option>
+        <option value="pending">Menunggu</option>
+        <option value="review">Sedang ditinjau</option>
+        <option value="accepted">Diterima</option>
+        <option value="rejected">Ditolak</option>
+      </select>
+      <button id="refreshBtn" class="btn btn-small btn-light">Muat ulang</button>
+    </div>
+    <p id="dashboardMessage" class="message" role="status"></p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Nama / Registrasi</th><th>Kontak</th><th>Identitas</th>
+            <th>Dokumen</th><th>Status</th><th>Tindakan</th>
+          </tr>
+        </thead>
+        <tbody id="applicantsBody">
+          <tr><td colspan="6">Memuat data…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="detailPanel" class="panel hidden">
+    <div class="toolbar">
+      <h2>Detail pendaftar</h2>
+      <button id="closeDetail" class="btn btn-small btn-light">Tutup</button>
+    </div>
+    <div id="detailContent"></div>
+  </section>
+
+  <section class="panel">
+    <div class="toolbar">
+      <h2>Pemantauan pesanan</h2>
+      <button id="refreshOrdersBtn" class="btn btn-small btn-light">Muat ulang</button>
+    </div>
+    <div class="stats">
+      <article class="stat"><span>Total pesanan</span><strong id="ordersTotal">—</strong></article>
+      <article class="stat"><span>Tersedia</span><strong id="ordersAvailable">—</strong></article>
+      <article class="stat"><span>Diambil driver</span><strong id="ordersAssigned">—</strong></article>
+      <article class="stat"><span>Selesai</span><strong id="ordersCompleted">—</strong></article>
+    </div>
+    <p id="ordersMessage" class="message" role="status"></p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>No. pesanan</th><th>Penjemputan</th><th>Tujuan</th>
+            <th>Tarif</th><th>Status</th><th>Driver</th><th>Waktu</th>
+          </tr>
+        </thead>
+        <tbody id="ordersBody">
+          <tr><td colspan="7">Memuat pesanan…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="toolbar">
+      <h2>Log aktivitas</h2>
+      <button id="refreshActivityBtn" class="btn btn-small btn-light">Muat ulang</button>
+    </div>
+    <p id="activityMessage" class="message" role="status"></p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Waktu</th><th>Peran</th><th>Aktivitas</th><th>Jenis data</th><th>ID data</th>
+          </tr>
+        </thead>
+        <tbody id="activityBody">
+          <tr><td colspan="5">Memuat aktivitas…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<footer>YourDriver · Admin Back Office</footer>
+</body>
+</html>
