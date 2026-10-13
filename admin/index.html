@@ -2,123 +2,419 @@
 <!doctype html>
 <html lang="id">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Back Office — YourDriver</title>
-<link rel="stylesheet" href="../yd-addons.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../yd-config.js"></script>
-<script defer src="dashboard.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#102a56">
+  <title>Admin Back Office — YourDriver</title>
+
+  <link rel="stylesheet" href="../yd-addons.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../yd-config.js"></script>
+  <script defer src="dashboard.js"></script>
 </head>
-<body>
-<header class="topbar">
+<body class="admin-page">
+
+<header class="topbar admin-topbar">
   <a class="brand" href="../index.html">
-    <img src="../logo.png" alt="" onerror="this.style.display='none'">
+    <img src="../logo.png" alt="YourDriver"
+         onerror="this.style.display='none'">
     <span>YourDriver <small>BACK OFFICE</small></span>
   </a>
-  <button id="logoutBtn" class="btn btn-small">Keluar</button>
+
+  <div class="admin-top-actions">
+    <span class="admin-online"><span></span> Admin Panel</span>
+    <button id="logoutBtn" class="btn btn-small">Keluar</button>
+  </div>
 </header>
 
-<main class="wrap dashboard">
-  <section class="hero">
-    <span class="eyebrow">PANEL ADMINISTRATOR</span>
-    <h1>Dashboard Admin</h1>
-    <p>Pantau pendaftaran mitra driver, pesanan, dan aktivitas yang tercatat.</p>
-  </section>
+<div class="admin-layout">
 
-  <section class="panel">
-    <h2>Ringkasan pendaftaran driver</h2>
-    <div class="stats">
-      <article class="stat"><span>Total pendaftar</span><strong id="totalCount">—</strong></article>
-      <article class="stat"><span>Menunggu</span><strong id="pendingCount">—</strong></article>
-      <article class="stat"><span>Diterima</span><strong id="acceptedCount">—</strong></article>
-      <article class="stat"><span>Ditolak</span><strong id="rejectedCount">—</strong></article>
-    </div>
-  </section>
+  <aside class="admin-sidebar">
+    <div class="sidebar-heading">MENU UTAMA</div>
 
-  <section class="panel">
-    <div class="toolbar">
-      <h2>Daftar pendaftar</h2>
-      <select id="statusFilter" aria-label="Filter status">
-        <option value="all">Semua status</option>
-        <option value="pending">Menunggu</option>
-        <option value="review">Sedang ditinjau</option>
-        <option value="accepted">Diterima</option>
-        <option value="rejected">Ditolak</option>
-      </select>
-      <button id="refreshBtn" class="btn btn-small btn-light">Muat ulang</button>
-    </div>
-    <p id="dashboardMessage" class="message" role="status"></p>
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Nama / Registrasi</th><th>Kontak</th><th>Identitas</th>
-            <th>Dokumen</th><th>Status</th><th>Tindakan</th>
-          </tr>
-        </thead>
-        <tbody id="applicantsBody">
-          <tr><td colspan="6">Memuat data…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
+    <nav class="admin-nav" aria-label="Navigasi admin">
+      <button class="nav-item active" type="button"
+              data-view="dashboard">
+        <span class="nav-icon">▦</span>
+        <span>Dashboard</span>
+      </button>
 
-  <section id="detailPanel" class="panel hidden">
-    <div class="toolbar">
-      <h2>Detail pendaftar</h2>
-      <button id="closeDetail" class="btn btn-small btn-light">Tutup</button>
-    </div>
-    <div id="detailContent"></div>
-  </section>
+      <button class="nav-item" type="button" data-view="drivers">
+        <span class="nav-icon">♙</span>
+        <span>Pengaturan Driver</span>
+      </button>
 
-  <section class="panel">
-    <div class="toolbar">
-      <h2>Pemantauan pesanan</h2>
-      <button id="refreshOrdersBtn" class="btn btn-small btn-light">Muat ulang</button>
-    </div>
-    <div class="stats">
-      <article class="stat"><span>Total pesanan</span><strong id="ordersTotal">—</strong></article>
-      <article class="stat"><span>Tersedia</span><strong id="ordersAvailable">—</strong></article>
-      <article class="stat"><span>Diambil driver</span><strong id="ordersAssigned">—</strong></article>
-      <article class="stat"><span>Selesai</span><strong id="ordersCompleted">—</strong></article>
-    </div>
-    <p id="ordersMessage" class="message" role="status"></p>
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>No. pesanan</th><th>Penjemputan</th><th>Tujuan</th>
-            <th>Tarif</th><th>Status</th><th>Driver</th><th>Waktu</th>
-          </tr>
-        </thead>
-        <tbody id="ordersBody">
-          <tr><td colspan="7">Memuat pesanan…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
+      <button class="nav-item" type="button" data-view="customers">
+        <span class="nav-icon">♧</span>
+        <span>Pengaturan Pelanggan</span>
+      </button>
 
-  <section class="panel">
-    <div class="toolbar">
-      <h2>Log aktivitas</h2>
-      <button id="refreshActivityBtn" class="btn btn-small btn-light">Muat ulang</button>
+      <button class="nav-item" type="button" data-view="orders">
+        <span class="nav-icon">▤</span>
+        <span>Pesanan</span>
+      </button>
+
+      <button class="nav-item" type="button" data-view="security">
+        <span class="nav-icon">◇</span>
+        <span>Keamanan</span>
+      </button>
+
+      <button class="nav-item" type="button" data-view="reports">
+        <span class="nav-icon">▥</span>
+        <span>Laporan</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="sidebar-status"></div>
+      <strong>YourDriver</strong>
+      <small>Administrator Back Office</small>
     </div>
-    <p id="activityMessage" class="message" role="status"></p>
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Waktu</th><th>Peran</th><th>Aktivitas</th><th>Jenis data</th><th>ID data</th>
-          </tr>
-        </thead>
-        <tbody id="activityBody">
-          <tr><td colspan="5">Memuat aktivitas…</td></tr>
-        </tbody>
-      </table>
+  </aside>
+
+  <main class="admin-main">
+
+    <div class="admin-page-heading">
+      <div>
+        <span class="eyebrow">YOURDRIVER MANAGEMENT</span>
+        <h1 id="pageTitle">Dashboard Admin</h1>
+        <p id="pageSubtitle">Pantau kondisi sistem dan aktivitas terbaru.</p>
+      </div>
+      <span class="admin-date" id="adminDate">Panel Admin</span>
     </div>
-  </section>
-</main>
+
+    <p id="dashboardMessage" class="message" role="status"
+       aria-live="polite"></p>
+
+    <!-- DASHBOARD -->
+    <section class="admin-view" id="view-dashboard">
+      <div class="stats dashboard-stats">
+        <article class="stat">
+          <span>Total pendaftar driver</span>
+          <strong id="dashDriverTotal">—</strong>
+          <small>Seluruh status pendaftaran</small>
+        </article>
+
+        <article class="stat">
+          <span>Menunggu pemeriksaan</span>
+          <strong id="dashDriverPending">—</strong>
+          <small>Pendaftar yang perlu ditinjau</small>
+        </article>
+
+        <article class="stat">
+          <span>Total pesanan</span>
+          <strong id="dashOrderTotal">—</strong>
+          <small>Data pesanan tersimpan</small>
+        </article>
+
+        <article class="stat">
+          <span>Pesanan selesai</span>
+          <strong id="dashOrderCompleted">—</strong>
+          <small>Pesanan berstatus selesai</small>
+        </article>
+      </div>
+
+      <section class="panel">
+        <div class="toolbar">
+          <div>
+            <h2>Ringkasan pendaftaran driver</h2>
+            <p class="muted">Status pendaftaran dari database.</p>
+          </div>
+          <button class="btn btn-small btn-light"
+                  type="button" data-view="drivers">
+            Buka data driver
+          </button>
+        </div>
+
+        <div class="stats">
+          <article class="stat">
+            <span>Total pendaftar</span>
+            <strong id="totalCount">—</strong>
+          </article>
+          <article class="stat">
+            <span>Menunggu</span>
+            <strong id="pendingCount">—</strong>
+          </article>
+          <article class="stat">
+            <span>Diterima</span>
+            <strong id="acceptedCount">—</strong>
+          </article>
+          <article class="stat">
+            <span>Ditolak</span>
+            <strong id="rejectedCount">—</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="toolbar">
+          <div>
+            <h2>Ringkasan pesanan</h2>
+            <p class="muted">Status pesanan yang tersedia di database.</p>
+          </div>
+          <button class="btn btn-small btn-light"
+                  type="button" data-view="orders">
+            Buka pesanan
+          </button>
+        </div>
+
+        <div class="stats">
+          <article class="stat">
+            <span>Tersedia</span>
+            <strong id="ordersAvailable">—</strong>
+          </article>
+          <article class="stat">
+            <span>Diambil driver</span>
+            <strong id="ordersAssigned">—</strong>
+          </article>
+          <article class="stat">
+            <span>Selesai</span>
+            <strong id="ordersCompleted">—</strong>
+          </article>
+          <article class="stat">
+            <span>Total pesanan</span>
+            <strong id="ordersTotal">—</strong>
+          </article>
+        </div>
+      </section>
+    </section>
+
+    <!-- PENGATURAN DRIVER -->
+    <section class="admin-view hidden" id="view-drivers">
+      <section class="panel">
+        <div class="toolbar">
+          <div>
+            <h2>Pengaturan Driver</h2>
+            <p class="muted">Periksa identitas, dokumen, dan status pendaftaran.</p>
+          </div>
+          <button id="refreshBtn" class="btn btn-small btn-light"
+                  type="button">Muat ulang</button>
+        </div>
+
+        <div class="driver-info-strip">
+          <strong>Komisi standar: 8%</strong>
+          <span>Nilai komisi dihitung dari tarif pesanan jika aturan
+          komisi tersebut sudah diterapkan pada transaksi terkait.</span>
+        </div>
+
+        <div class="toolbar driver-toolbar">
+          <input id="driverSearch" type="search"
+                 placeholder="Cari nama, email, atau nomor registrasi..."
+                 aria-label="Cari pendaftar driver">
+
+          <select id="statusFilter" aria-label="Filter status">
+            <option value="all">Semua status</option>
+            <option value="pending">Menunggu</option>
+            <option value="review">Sedang ditinjau</option>
+            <option value="accepted">Diterima</option>
+            <option value="rejected">Ditolak</option>
+          </select>
+        </div>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Nama / Registrasi</th>
+                <th>Kontak</th>
+                <th>Identitas</th>
+                <th>Dokumen</th>
+                <th>Status</th>
+                <th>Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="applicantsBody">
+              <tr><td colspan="6">Memuat data…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="detailPanel" class="panel hidden">
+        <div class="toolbar">
+          <h2>Detail pendaftar</h2>
+          <button id="closeDetail" class="btn btn-small btn-light"
+                  type="button">Tutup</button>
+        </div>
+        <div id="detailContent"></div>
+      </section>
+    </section>
+
+    <!-- PENGATURAN PELANGGAN -->
+    <section class="admin-view hidden" id="view-customers">
+      <section class="panel">
+        <span class="eyebrow">MANAJEMEN AKUN</span>
+        <h2>Pengaturan Pelanggan</h2>
+        <p>
+          Bagian ini disiapkan untuk daftar pelanggan, pencarian akun,
+          pemulihan kata sandi, dan rekap pesanan sejak pelanggan mendaftar.
+        </p>
+
+        <div class="feature-notice">
+          <strong>Menunggu integrasi data pelanggan</strong>
+          <p>
+            Database yang saat ini digunakan belum menyediakan sumber
+            profil pelanggan dan relasi pesanan pelanggan yang memadai.
+            Data tidak akan ditampilkan sampai sumber tersebut dikonfigurasi.
+          </p>
+        </div>
+
+        <p class="muted">
+          Pemulihan kata sandi harus menggunakan alur reset autentikasi.
+          Kata sandi lama tidak dapat ditampilkan kepada administrator.
+        </p>
+      </section>
+    </section>
+
+    <!-- PESANAN -->
+    <section class="admin-view hidden" id="view-orders">
+      <section class="panel">
+        <div class="toolbar">
+          <div>
+            <h2>Pemantauan Pesanan</h2>
+            <p class="muted">Daftar pesanan dan status penugasannya.</p>
+          </div>
+          <button id="refreshOrdersBtn"
+                  class="btn btn-small btn-light"
+                  type="button">Muat ulang</button>
+        </div>
+
+        <div class="toolbar">
+          <input id="orderSearch" type="search"
+                 placeholder="Cari nomor pesanan atau alamat..."
+                 aria-label="Cari pesanan">
+          <select id="orderStatusFilter" aria-label="Filter status pesanan">
+            <option value="all">Semua status</option>
+            <option value="available">Tersedia</option>
+            <option value="assigned">Diambil driver</option>
+            <option value="completed">Selesai</option>
+            <option value="cancelled">Dibatalkan</option>
+          </select>
+        </div>
+
+        <div class="stats">
+          <article class="stat">
+            <span>Total pesanan</span>
+            <strong id="ordersTotal">—</strong>
+          </article>
+          <article class="stat">
+            <span>Tersedia</span>
+            <strong id="ordersAvailable">—</strong>
+          </article>
+          <article class="stat">
+            <span>Diambil driver</span>
+            <strong id="ordersAssigned">—</strong>
+          </article>
+          <article class="stat">
+            <span>Selesai</span>
+            <strong id="ordersCompleted">—</strong>
+          </article>
+        </div>
+
+        <p id="ordersMessage" class="message" role="status"
+           aria-live="polite"></p>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>No. pesanan</th>
+                <th>Penjemputan</th>
+                <th>Tujuan</th>
+                <th>Tarif</th>
+                <th>Status</th>
+                <th>ID Driver</th>
+                <th>Waktu</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody">
+              <tr><td colspan="7">Memuat pesanan…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <!-- KEAMANAN -->
+    <section class="admin-view hidden" id="view-security">
+      <section class="panel">
+        <div class="toolbar">
+          <div>
+            <h2>Keamanan dan Log Aktivitas</h2>
+            <p class="muted">
+              Riwayat aktivitas yang dicatat oleh database.
+            </p>
+          </div>
+          <button id="refreshActivityBtn"
+                  class="btn btn-small btn-light"
+                  type="button">Muat ulang</button>
+        </div>
+
+        <div class="security-cards">
+          <article>
+            <strong>Kontrol akses</strong>
+            <p>Halaman admin memverifikasi sesi dan akun pada tabel admin_users.</p>
+          </article>
+          <article>
+            <strong>Dokumen privat</strong>
+            <p>Dokumen driver dibuka melalui URL sementara, bukan tautan publik permanen.</p>
+          </article>
+          <article>
+            <strong>Data sensitif</strong>
+            <p>Hindari menampilkan kata sandi, token, atau data rahasia dalam log.</p>
+          </article>
+        </div>
+
+        <p id="activityMessage" class="message" role="status"
+           aria-live="polite"></p>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Peran</th>
+                <th>Aktivitas</th>
+                <th>Jenis data</th>
+                <th>ID data</th>
+              </tr>
+            </thead>
+            <tbody id="activityBody">
+              <tr><td colspan="5">Memuat aktivitas…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <!-- LAPORAN -->
+    <section class="admin-view hidden" id="view-reports">
+      <section class="panel">
+        <span class="eyebrow">ANALISIS OPERASIONAL</span>
+        <h2>Laporan Harian, Mingguan, dan Bulanan</h2>
+        <p>
+          Laporan akan mencakup jumlah pesanan, pelanggan yang memesan,
+          driver yang menerima pesanan, tarif, dan komisi.
+        </p>
+
+        <div class="feature-notice">
+          <strong>Menunggu integrasi relasi pelanggan dan transaksi</strong>
+          <p>
+            Tabel driver_orders saat ini menyimpan pesanan dan ID driver,
+            tetapi belum menyediakan relasi pelanggan yang cukup untuk
+            membuat seluruh laporan pelanggan secara akurat.
+          </p>
+        </div>
+
+        <p class="muted">
+          Laporan final akan menggunakan rentang tanggal dan data database
+          yang sebenarnya, bukan angka contoh.
+        </p>
+      </section>
+    </section>
+
+  </main>
+</div>
 
 <footer>YourDriver · Admin Back Office</footer>
 </body>
