@@ -72,8 +72,8 @@
                         <div class="flex items-center space-x-2">
                             <div class="relative flex-1">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="w-2.5 h-2.5 bg-blue-600 rounded-full ring-4 ring-blue-100"></span></div>
-                                <input type="text" id="pickup-input" placeholder="Klik tombol Peta..." readonly required
-                                    class="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer" onclick="openMapModal('pickup')">
+                                <input type="text" id="pickup-input" placeholder="Ketik alamat penjemputan..." required autocomplete="street-address"
+                                    class="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500" oninput="locationInputChanged('pickup')" onblur="locationInputBlurred()">
                             </div>
                             <button type="button" onclick="openMapModal('pickup')" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow transition">Peta</button>
                         </div>
@@ -87,8 +87,8 @@
                         <div class="flex items-center space-x-2">
                             <div class="relative flex-1">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="w-2.5 h-2.5 bg-red-500 rounded-full ring-4 ring-red-100"></span></div>
-                                <input type="text" id="dest-input" placeholder="Klik tombol Peta..." readonly required
-                                    class="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer" onclick="openMapModal('dest')">
+                                <input type="text" id="dest-input" placeholder="Ketik alamat tujuan..." required autocomplete="street-address"
+                                    class="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500" oninput="locationInputChanged('dest')" onblur="locationInputBlurred()">
                             </div>
                             <button type="button" onclick="openMapModal('dest')" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow transition">Peta</button>
                         </div>
@@ -544,6 +544,34 @@
 
         function closeMapModal() { document.getElementById('map-modal').classList.add('hidden'); }
 
+        // Input alamat boleh diketik langsung; tombol Peta tetap tersedia untuk memilih pin.
+        function locationInputChanged(type) {
+            const inputId = type === 'pickup' ? 'pickup-input' : 'dest-input';
+            const statusId = type === 'pickup' ? 'pickup-label-status' : 'dest-label-status';
+            if (type === 'pickup') pickupCoords = null;
+            else destCoords = null;
+            const value = document.getElementById(inputId).value.trim();
+            document.getElementById(statusId).innerText = value ? 'Alamat diketik' : 'Ketik alamat atau pilih peta';
+            document.getElementById('distance-val').innerText = '0.0';
+            document.getElementById('duration-val').innerText = '0';
+            document.getElementById('fare-val').innerText = 'Rp 0';
+        }
+
+        function locationInputBlurred() {
+            const pickup = document.getElementById('pickup-input').value.trim();
+            const dest = document.getElementById('dest-input').value.trim();
+            if (pickup && dest) calculateEstimate();
+        }
+
+        async function geocodeAddress(address) {
+            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=id&q=${encodeURIComponent(address)}`;
+            const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!response.ok) throw new Error('Pencarian alamat tidak tersedia');
+            const results = await response.json();
+            if (!results.length) throw new Error(`Alamat tidak ditemukan: ${address}`);
+            return [Number(results[0].lat), Number(results[0].lon)];
+        }
+
         async function reverseGeocode(lat, lon) {
             try {
                 const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`;
@@ -577,7 +605,9 @@
         }
 
         async function calculateEstimate() {
-            if (!pickupCoords || !destCoords) return;
+            const pickupAddress = document.getElementById('pickup-input').value.trim();
+            const destAddress = document.getElementById('dest-input').value.trim();
+            if (!pickupAddress || !destAddress) return;
             const distanceEl = document.getElementById('distance-val');
             const durationEl = document.getElementById('duration-val');
             const fareEl = document.getElementById('fare-val');
@@ -586,6 +616,16 @@
             fareEl.innerText = 'Menghitung...';
 
             try {
+                if (!pickupCoords) {
+                    document.getElementById('pickup-label-status').innerText = 'Mencari alamat...';
+                    pickupCoords = await geocodeAddress(pickupAddress);
+                    document.getElementById('pickup-label-status').innerText = 'Alamat ditemukan ✓';
+                }
+                if (!destCoords) {
+                    document.getElementById('dest-label-status').innerText = 'Mencari alamat...';
+                    destCoords = await geocodeAddress(destAddress);
+                    document.getElementById('dest-label-status').innerText = 'Alamat ditemukan ✓';
+                }
                 const coords = `${pickupCoords[1]},${pickupCoords[0]};${destCoords[1]},${destCoords[0]}`;
                 const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`);
                 if (!response.ok) throw new Error('Rute tidak tersedia');
@@ -598,9 +638,11 @@
                 durationEl.innerText = String(minutes);
                 fareEl.innerText = `Rp ${Math.round(dist * 6500 + 3500).toLocaleString('id-ID')}`;
             } catch (error) {
+                if (!pickupCoords) document.getElementById('pickup-label-status').innerText = 'Alamat belum ditemukan';
+                if (!destCoords) document.getElementById('dest-label-status').innerText = 'Alamat belum ditemukan';
                 distanceEl.innerText = '—';
                 durationEl.innerText = '—';
-                fareEl.innerText = 'Rute tidak tersedia';
+                fareEl.innerText = error.message && error.message.startsWith('Alamat tidak ditemukan') ? 'Periksa alamat' : 'Rute tidak tersedia';
                 console.error('Gagal menghitung rute:', error);
             }
         }
@@ -625,9 +667,31 @@
             });
         }
 
-        function handleOrder(e) {
+        async function handleOrder(e) {
             e.preventDefault();
-            if (!pickupCoords || !destCoords) { alert("Pilih titik jemput dan tujuan."); return; }
+            const pickupAddress = document.getElementById('pickup-input').value.trim();
+            const destAddress = document.getElementById('dest-input').value.trim();
+            if (!pickupAddress || !destAddress) { alert("Isi alamat penjemputan dan tujuan, atau pilih titiknya lewat tombol Peta."); return; }
+            try {
+                if (!pickupCoords) {
+                    document.getElementById('pickup-label-status').innerText = 'Mencari alamat...';
+                    pickupCoords = await geocodeAddress(pickupAddress);
+                    document.getElementById('pickup-label-status').innerText = 'Alamat ditemukan ✓';
+                }
+                if (!destCoords) {
+                    document.getElementById('dest-label-status').innerText = 'Mencari alamat...';
+                    destCoords = await geocodeAddress(destAddress);
+                    document.getElementById('dest-label-status').innerText = 'Alamat ditemukan ✓';
+                }
+                await calculateEstimate();
+                if (document.getElementById('distance-val').innerText === '—') {
+                    alert("Rute belum bisa dihitung. Periksa alamat atau pilih lokasi melalui tombol Peta.");
+                    return;
+                }
+            } catch (error) {
+                alert(error.message || "Alamat tidak dapat ditemukan. Coba perjelas alamat atau pilih lewat peta.");
+                return;
+            }
             document.getElementById('form-section').classList.add('hidden');
             document.getElementById('active-order-section').classList.remove('hidden');
 
@@ -729,8 +793,8 @@
             document.getElementById('form-section').classList.remove('hidden');
             document.getElementById('pickup-input').value = "";
             document.getElementById('dest-input').value = "";
-            document.getElementById('pickup-label-status').innerText = "Pilih di peta...";
-            document.getElementById('dest-label-status').innerText = "Pilih di peta...";
+            document.getElementById('pickup-label-status').innerText = "Ketik alamat atau pilih peta";
+            document.getElementById('dest-label-status').innerText = "Ketik alamat atau pilih peta";
             document.getElementById('distance-val').innerText = "0.0";
             document.getElementById('duration-val').innerText = "0";
             document.getElementById('fare-val').innerText = "Rp 0";
