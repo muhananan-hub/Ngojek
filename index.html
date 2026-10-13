@@ -1,807 +1,1079 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dashboard - Ngojek</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .panel-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .leaflet-routing-container { display: none !important; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dashboard - Ngojek</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="yd-config.js"></script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+.custom-scrollbar::-webkit-scrollbar{width:5px}
+.custom-scrollbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+.panel-transition{transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.leaflet-routing-container{display:none!important}
+button:disabled{opacity:.6;cursor:not-allowed}
+</style>
 </head>
+
 <body class="bg-slate-900 text-slate-800 font-sans antialiased h-screen w-screen overflow-hidden m-0 p-0 flex items-center justify-center">
 
-    <script>
-        const loggedUser = localStorage.getItem('yd_logged_in_user');
-        if (!loggedUser) {
-            alert("Sesi Anda telah habis atau belum masuk. Silakan login terlebih dahulu.");
-            window.location.href = 'login.html';
-        }
-    </script>
+<div id="main-card" class="w-full max-w-md h-full md:h-[90vh] md:max-h-[850px] bg-white md:rounded-3xl shadow-2xl flex flex-col justify-between overflow-hidden relative border border-slate-100">
 
-    <div id="main-card" class="w-full max-w-md h-full md:h-[90vh] md:max-h-[850px] bg-white md:rounded-3xl shadow-2xl flex flex-col justify-between overflow-hidden relative border border-slate-100">
-        
-        <!-- BAGIAN 1: FORMULIR UTAMA -->
-        <div id="form-section" class="flex-1 flex flex-col justify-between overflow-y-auto px-6 py-6 custom-scrollbar z-10 bg-white">
-            <div>
-                <!-- Brand & Logo + Tombol Logout -->
-                <div class="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
-                    <div class="flex items-center space-x-3">
-                        <img src="logo.png" alt="Ngojek Logo" class="w-10 h-10 object-contain rounded-xl shadow-md border border-blue-100 bg-blue-50" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><circle cx=\'50\' cy=\'50\' r=\'45\' fill=\'%232563eb\'/><text x=\'50\' y=\'55\' font-size=\'35\' fill=\'white\' text-anchor=\'middle\' font-weight=\'bold\'>YD</text></svg>'">
-                        <div>
-                            <span class="text-xl font-black tracking-tight text-slate-900">Your<span class="text-blue-600">Driver</span></span>
-                            <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Halo, <span id="user-display-name" class="text-blue-600">Pengguna</span></p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                    <button type="button" onclick="openSettings()" class="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-xl font-bold border border-blue-100 transition">
-                        <i class="fa-solid fa-user-gear mr-1"></i> Profil
-                    </button>
-                    <button type="button" onclick="handleLogout()" class="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider border border-red-100 transition shadow-xs">
-                        <i class="fa-solid fa-right-from-bracket mr-1"></i> Keluar
-                    </button>
-                    </div>
-                </div>
+<!-- FORM PEMESANAN -->
+<div id="form-section" class="flex-1 flex flex-col justify-between overflow-y-auto px-6 py-6 custom-scrollbar z-10 bg-white">
+<div>
+<div class="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
+<div class="flex items-center space-x-3">
+<img src="logo.png" alt="Ngojek Logo" class="w-10 h-10 object-contain rounded-xl shadow-md border border-blue-100 bg-blue-50" onerror="this.style.display='none'">
+<div>
+<span class="text-xl font-black tracking-tight text-slate-900">Your<span class="text-blue-600">Driver</span></span>
+<p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Halo, <span id="user-display-name" class="text-blue-600">Pengguna</span></p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button type="button" onclick="openSettings()" class="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-xl font-bold border border-blue-100"><i class="fa-solid fa-user-gear mr-1"></i> Profil</button>
+<button type="button" onclick="handleLogout()" class="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-xl font-bold border border-red-100"><i class="fa-solid fa-right-from-bracket mr-1"></i> Keluar</button>
+</div>
+</div>
 
-                <!-- Pilihan Layanan -->
-                <div class="grid grid-cols-2 gap-2.5 mb-5 w-full">
-                    <button type="button" onclick="selectService('ride')" id="btn-ride" class="w-full min-w-0 flex flex-col items-center justify-center p-3 rounded-xl border-2 border-blue-600 bg-blue-50/40 transition shadow-sm">
-                        <i class="fa-solid fa-motorcycle text-blue-600 text-base mb-1"></i>
-                        <span class="text-[11px] font-bold text-slate-700">YourRide</span>
-                    </button>
-                    <button type="button" onclick="selectService('car')" id="btn-car" class="w-full min-w-0 flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 transition">
-                        <i class="fa-solid fa-car text-slate-500 text-base mb-1"></i>
-                        <span class="text-[11px] font-semibold text-slate-600">YourCar</span>
-                    </button>
+<div class="grid grid-cols-2 gap-2.5 mb-5 w-full">
+<button type="button" onclick="selectService('ride')" id="btn-ride" class="w-full flex flex-col items-center justify-center p-3 rounded-xl border-2 border-blue-600 bg-blue-50/40 shadow-sm">
+<i class="fa-solid fa-motorcycle text-blue-600 text-base mb-1"></i><span class="text-[11px] font-bold text-slate-700">YourRide</span>
+</button>
+<button type="button" onclick="selectService('car')" id="btn-car" class="w-full flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white">
+<i class="fa-solid fa-car text-slate-500 text-base mb-1"></i><span class="text-[11px] font-semibold text-slate-600">YourCar</span>
+</button>
+</div>
 
-                </div>
+<form id="order-form" onsubmit="handleOrder(event)" class="space-y-4">
+<div class="p-3 border-2 border-blue-600 rounded-xl bg-blue-50/10 shadow-sm space-y-1.5">
+<div class="flex items-center justify-between text-[11px] font-bold text-blue-900 px-1"><span>LOKASI PENJEMPUTAN</span><span class="text-[10px] text-slate-400 font-normal" id="pickup-label-status">Pilih di peta...</span></div>
+<div class="flex items-center space-x-2">
+<div class="relative flex-1"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="w-2.5 h-2.5 bg-blue-600 rounded-full ring-4 ring-blue-100"></span></div>
+<input type="text" id="pickup-input" required autocomplete="street-address" placeholder="Ketik alamat penjemputan..." class="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-200" oninput="locationInputChanged('pickup')" onblur="locationInputBlurred()"></div>
+<button type="button" onclick="openMapModal('pickup')" class="px-4 py-2.5 bg-slate-900 text-white rounded-lg text-xs font-bold">Peta</button>
+</div>
+</div>
 
-                <!-- Form Lokasi -->
-                <form id="order-form" onsubmit="handleOrder(event)" class="space-y-4">
-                    <div class="p-3 border-2 border-blue-600 rounded-xl bg-blue-50/10 shadow-sm space-y-1.5">
-                        <div class="flex items-center justify-between text-[11px] font-bold text-blue-900 px-1">
-                            <span>LOKASI PENJEMPUTAN</span>
-                            <span class="text-[10px] text-slate-400 font-normal" id="pickup-label-status">Pilih di peta...</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <div class="relative flex-1">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="w-2.5 h-2.5 bg-blue-600 rounded-full ring-4 ring-blue-100"></span></div>
-                                <input type="text" id="pickup-input" placeholder="Ketik alamat penjemputan..." required autocomplete="street-address"
-                                    class="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500" oninput="locationInputChanged('pickup')" onblur="locationInputBlurred()">
-                            </div>
-                            <button type="button" onclick="openMapModal('pickup')" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow transition">Peta</button>
-                        </div>
-                    </div>
+<div class="p-3 border-2 border-slate-200 rounded-xl bg-slate-50/50 shadow-sm space-y-1.5">
+<div class="flex items-center justify-between text-[11px] font-bold text-slate-700 px-1"><span>LOKASI TUJUAN</span><span class="text-[10px] text-slate-400 font-normal" id="dest-label-status">Pilih di peta...</span></div>
+<div class="flex items-center space-x-2">
+<div class="relative flex-1"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="w-2.5 h-2.5 bg-red-500 rounded-full ring-4 ring-red-100"></span></div>
+<input type="text" id="dest-input" required autocomplete="street-address" placeholder="Ketik alamat tujuan..." class="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-200" oninput="locationInputChanged('dest')" onblur="locationInputBlurred()"></div>
+<button type="button" onclick="openMapModal('dest')" class="px-4 py-2.5 bg-slate-900 text-white rounded-lg text-xs font-bold">Peta</button>
+</div>
+</div>
 
-                    <div class="p-3 border-2 border-slate-200 rounded-xl bg-slate-50/50 shadow-sm space-y-1.5">
-                        <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 px-1">
-                            <span>LOKASI TUJUAN</span>
-                            <span class="text-[10px] text-slate-400 font-normal" id="dest-label-status">Pilih di peta...</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <div class="relative flex-1">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="w-2.5 h-2.5 bg-red-500 rounded-full ring-4 ring-red-100"></span></div>
-                                <input type="text" id="dest-input" placeholder="Ketik alamat tujuan..." required autocomplete="street-address"
-                                    class="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500" oninput="locationInputChanged('dest')" onblur="locationInputBlurred()">
-                            </div>
-                            <button type="button" onclick="openMapModal('dest')" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow transition">Peta</button>
-                        </div>
-                    </div>
+<div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 shadow-inner">
+<div class="flex items-center justify-between mb-1"><span class="text-[10px] font-black uppercase tracking-wider text-slate-400">ESTIMASI TARIF</span><span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">Normal</span></div>
+<div class="flex justify-between items-end">
+<p class="text-lg font-black text-slate-900"><span id="distance-val">0.0</span> km <span class="text-[11px] font-medium text-slate-500">(<span id="duration-val">0</span> mnt)</span></p>
+<div class="text-right"><p class="text-[9px] font-bold text-slate-400 uppercase">Total Estimasi</p><p class="text-lg font-black text-blue-600" id="fare-val">Rp 0</p></div>
+</div>
+</div>
 
-                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 shadow-inner">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">ESTIMASI TARIF</span>
-                            <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">Normal</span>
-                        </div>
-                        <div class="flex justify-between items-end">
-                            <div><p class="text-lg font-black text-slate-900"><span id="distance-val">0.0</span> km <span class="text-[11px] font-medium text-slate-500">(<span id="duration-val">0</span> mnt)</span></p></div>
-                            <div class="text-right">
-                                <p class="text-[9px] font-bold text-slate-400 uppercase">Total Estimasi</p>
-                                <p class="text-lg font-black text-blue-600" id="fare-val">Rp 0</p>
-                            </div>
-                        </div>
-                    </div>
+<button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 text-xs tracking-wide"><span>Pesan YourRide Sekarang</span><i class="fa-solid fa-arrow-right text-xs"></i></button>
+</form>
+</div>
+<div class="pt-4 text-center border-t border-slate-100 mt-4"><p class="text-[10px] text-slate-400 font-semibold">Ngojek System © 2026</p></div>
+</div>
 
-                    <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center space-x-2 text-xs md:text-sm tracking-wide">
-                        <span>Pesan Ngojek Sekarang</span>
-                        <i class="fa-solid fa-arrow-right text-xs"></i>
-                    </button>
-                </form>
-            </div>
+<!-- STATUS PESANAN -->
+<div id="active-order-section" class="hidden absolute inset-0 w-full h-full flex flex-col justify-between z-20">
+<div class="absolute inset-0 w-full h-full z-0"><div id="live-map" class="w-full h-full"></div></div>
+<div class="relative z-30 p-4 pointer-events-none">
+<div class="pointer-events-auto bg-slate-900/90 text-white px-4 py-3 rounded-2xl shadow-lg flex items-center justify-between border border-slate-700">
+<div class="flex items-center gap-2"><span id="status-dot" class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping"></span><span class="text-xs font-bold" id="active-status-title">Menunggu driver menerima pesanan</span></div>
+<span id="active-status-badge" class="text-[9px] bg-blue-600/40 text-blue-200 px-2 py-1 rounded-full font-bold">Menunggu</span>
+</div>
+</div>
 
-            <div class="pt-4 text-center border-t border-slate-100 mt-4">
-                <p class="text-[10px] text-slate-400 font-semibold">Ngojek System © 2026</p>
-            </div>
-        </div>
+<div id="bottom-panel" class="relative z-30 mt-auto bg-white/95 backdrop-blur-md px-5 pt-3 pb-5 rounded-t-3xl shadow-2xl border-t border-slate-100 panel-transition">
+<div class="flex justify-center pb-2 cursor-pointer" onclick="toggleMinimizePanel()"><div class="w-10 h-1.5 bg-slate-300 rounded-full"></div></div>
+<div class="flex items-center justify-between mb-3"><h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Rincian Perjalanan</h3><button type="button" onclick="toggleMinimizePanel()" class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100"><span id="minimize-text">Minimize ▾</span></button></div>
+<div id="panel-content" class="space-y-3">
+<div class="grid grid-cols-2 gap-2.5">
+<div class="p-3 bg-blue-50/60 rounded-xl border border-blue-100 text-center"><p class="text-[9px] font-bold text-slate-400 uppercase">Jarak</p><p class="text-sm font-black text-slate-900"><span id="active-dist">0.0</span> km</p><p class="text-[11px] font-bold text-blue-600" id="active-duration">0 Menit</p></div>
+<div class="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 text-center"><p class="text-[9px] font-bold text-slate-400 uppercase">Total Biaya</p><p class="text-sm font-black text-emerald-700" id="active-fare">Rp 0</p><p class="text-[9px] text-slate-500">Tunai / QRIS</p></div>
+</div>
 
-        <!-- BAGIAN 2: STATUS AKTIF PERJALANAN & PETA -->
-        <div id="active-order-section" class="hidden absolute inset-0 w-full h-full flex flex-col justify-between z-20">
-            <div class="absolute inset-0 w-full h-full z-0"><div id="live-map" class="w-full h-full"></div></div>
+<div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+<div class="flex items-center justify-between mb-2"><span class="text-[9px] font-bold text-blue-700 bg-white px-2 py-0.5 rounded border">Informasi Driver</span><span id="driver-plate" class="text-xs font-extrabold text-slate-500">Menunggu</span></div>
+<div class="flex items-center gap-3 mb-3">
+<div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl"><i class="fa-solid fa-user"></i></div>
+<div class="flex-1"><h4 id="driver-name" class="font-bold text-slate-900 text-xs">Menunggu driver menerima pesanan</h4><p id="driver-vehicle" class="text-[10px] text-slate-500">Informasi driver akan tersedia setelah pesanan diterima.</p><p id="driver-rating" class="text-[10px] text-slate-500 mt-1">Pesanan tersimpan di sistem</p></div>
+</div>
+<p class="text-[10px] text-slate-500 mb-2">No. Pesanan: <b id="active-order-number">—</b></p>
+<div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200">
+<button type="button" onclick="contactDriver()" class="py-2 bg-white text-blue-700 border border-slate-200 rounded-lg text-[10px] font-bold"><i class="fa-solid fa-phone mr-1"></i> Telepon</button>
+<button type="button" onclick="cancelOrder()" class="py-2 bg-red-50 text-red-600 border border-red-100 rounded-lg text-[10px] font-bold"><i class="fa-solid fa-ban mr-1"></i> Batalkan Pesanan</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 
-            <div class="relative z-30 p-4 pointer-events-none">
-                <div class="pointer-events-auto bg-slate-900/85 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-lg flex items-center justify-between border border-slate-700/50">
-                    <div class="flex items-center space-x-2.5">
-                        <span class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping"></span>
-                        <span class="text-xs font-bold tracking-wide" id="active-status-title">Mencari rute jalan raya...</span>
-                    </div>
-                    <span class="text-[10px] bg-blue-600/40 text-blue-200 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-blue-400/30">Live Rute</span>
-                </div>
-            </div>
+<!-- MODAL PETA -->
+<div id="map-modal" class="hidden fixed inset-0 bg-slate-950/80 z-[9999] flex items-center justify-center p-3">
+<div class="bg-white rounded-3xl max-w-2xl w-full h-[85vh] flex flex-col overflow-hidden">
+<div class="p-4 bg-slate-900 text-white flex items-center justify-between"><div><h3 class="text-sm font-bold" id="map-modal-title">Pilih Lokasi</h3><p class="text-[10px] text-slate-400">Ketuk peta untuk menyematkan pin</p></div><button type="button" onclick="closeMapModal()" class="w-8 h-8 rounded-full bg-slate-800"><i class="fa-solid fa-xmark"></i></button></div>
+<div class="flex-1 relative"><div id="picker-map" style="height:100%;width:100%"></div></div>
+<div class="p-3 text-center"><button type="button" onclick="confirmMapSelection()" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold">Konfirmasi Titik Ini</button></div>
+</div>
+</div>
 
-            <div id="bottom-panel" class="relative z-30 mt-auto bg-white/95 backdrop-blur-md px-5 pt-3 pb-5 rounded-t-3xl shadow-2xl border-t border-slate-100 panel-transition">
-                <div class="flex justify-center pb-2 cursor-pointer" onclick="toggleMinimizePanel()">
-                    <div class="w-10 h-1.5 bg-slate-300 rounded-full hover:bg-slate-400 transition"></div>
-                </div>
+<!-- MODAL RATING -->
+<div id="rating-modal" class="hidden fixed inset-0 bg-slate-950/75 z-[9999] flex items-center justify-center p-4">
+<div class="bg-white rounded-3xl max-w-sm w-full max-h-[92vh] overflow-y-auto p-6 text-center shadow-2xl">
+<div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-lg mx-auto mb-3"><i class="fa-solid fa-circle-check"></i></div>
+<h3 class="text-base font-black text-slate-900">Perjalanan Selesai!</h3>
+<p class="text-[11px] text-slate-500 mb-4">Pilih pembayaran dan berikan ulasan.</p>
+<div class="mb-4 text-left"><label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Metode Pembayaran</label><div class="grid grid-cols-2 gap-2">
+<button type="button" onclick="selectPayment('cash')" id="pay-cash" class="p-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-xs font-bold"><i class="fa-solid fa-money-bill-wave mr-1"></i>Tunai</button>
+<button type="button" onclick="selectPayment('qris')" id="pay-qris" class="p-2.5 rounded-xl border-2 border-slate-200 text-slate-600 text-xs font-semibold"><i class="fa-solid fa-qrcode mr-1"></i>QRIS</button>
+</div></div>
+<div class="mb-5 text-left"><label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Rating Driver</label><div class="flex justify-center gap-2 py-1 bg-slate-50 rounded-xl border"><button type="button" onclick="setRating(1)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button><button type="button" onclick="setRating(2)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button><button type="button" onclick="setRating(3)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button><button type="button" onclick="setRating(4)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button><button type="button" onclick="setRating(5)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button></div></div>
+<div class="mb-5 text-left"><label for="trip-review" class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Ulasan (Opsional)</label><textarea id="trip-review" rows="3" maxlength="600" class="w-full resize-none p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs" placeholder="Ceritakan pengalaman Anda..."></textarea><p class="mt-1 text-[9px] text-slate-400 text-right"><span id="review-count">0</span>/600 karakter</p></div>
+<button type="button" onclick="completeTripAndReset()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl text-xs">Simpan Pembayaran & Ulasan</button>
+</div>
+</div>
 
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Rincian Perjalanan</h3>
-                    <button type="button" onclick="toggleMinimizePanel()" class="text-[11px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
-                        <span id="minimize-text">Minimize ▾</span>
-                    </button>
-                </div>
+<!-- MODAL PROFIL -->
+<div id="settings-modal" class="hidden fixed inset-0 bg-slate-950/75 z-[9999] flex items-center justify-center p-3">
+<div class="bg-white rounded-3xl max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl">
+<div class="sticky top-0 z-10 p-4 bg-slate-900 text-white flex items-center justify-between"><div><h3 class="text-sm font-black">Profil & Pengaturan</h3><p class="text-[10px] text-slate-300">Kelola akun pelanggan</p></div><button type="button" onclick="closeSettings()" class="w-8 h-8 rounded-full bg-slate-800"><i class="fa-solid fa-xmark"></i></button></div>
+<div class="p-5 space-y-5">
+<section class="p-4 rounded-2xl bg-blue-50 border border-blue-100">
+<div class="flex items-center gap-3 mb-4"><div class="text-center"><img id="profile-photo-preview" alt="Foto profil" class="hidden w-14 h-14 rounded-full object-cover border-2 border-blue-200"><div id="profile-photo-placeholder" class="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg"><i class="fa-solid fa-user"></i></div><label for="profile-photo-input" class="block mt-1 text-[9px] font-bold text-blue-700 cursor-pointer">Ganti foto</label><input id="profile-photo-input" type="file" accept="image/*" class="hidden" onchange="handleProfilePhoto(event)"></div><div class="flex-1"><h4 class="font-black text-slate-900 text-sm" id="profile-heading">Profil Pelanggan</h4><p class="text-[10px] text-slate-500">Informasi akun Anda</p></div></div>
+<form id="profile-form" onsubmit="saveProfile(event)" class="space-y-3">
+<div><label class="block text-[10px] font-bold text-slate-500 mb-1">Nama pelanggan</label><input id="profile-name" required maxlength="80" class="w-full p-2.5 rounded-xl border text-xs"></div>
+<div><label class="block text-[10px] font-bold text-slate-500 mb-1">Nomor telepon</label><input id="profile-phone" type="tel" maxlength="25" class="w-full p-2.5 rounded-xl border text-xs"></div>
+<div><label class="block text-[10px] font-bold text-slate-500 mb-1">Email</label><input id="profile-email" type="email" maxlength="120" class="w-full p-2.5 rounded-xl border text-xs"></div>
+<button class="w-full py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold" type="submit">Simpan Profil</button>
+</form>
+</section>
 
-                <div id="panel-content" class="space-y-3">
-                    <div class="grid grid-cols-2 gap-2.5">
-                        <div class="p-3 bg-blue-50/60 rounded-xl border border-blue-100 text-center">
-                            <p class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Sisa Jarak & Waktu</p>
-                            <p class="text-sm font-black text-slate-900"><span id="active-dist">3.8</span> km</p>
-                            <p class="text-[11px] font-bold text-blue-600" id="active-duration">11 Menit</p>
-                        </div>
-                        <div class="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 text-center">
-                            <p class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Total Biaya Perjalanan</p>
-                            <p class="text-sm font-black text-emerald-700" id="active-fare">Rp 28.200</p>
-                            <p class="text-[9px] font-semibold text-slate-500">Tunai / QRIS</p>
-                        </div>
-                    </div>
+<section>
+<h4 class="text-xs font-black mb-2"><i class="fa-solid fa-shield-halved text-emerald-600 mr-1"></i> Keamanan Akun</h4>
+<form id="password-form" onsubmit="changePassword(event)" class="space-y-2">
+<input id="current-password" type="password" autocomplete="current-password" required placeholder="Kata sandi saat ini" class="w-full p-2.5 rounded-xl border text-xs">
+<input id="new-password" type="password" autocomplete="new-password" required minlength="8" placeholder="Kata sandi baru (min. 8 karakter)" class="w-full p-2.5 rounded-xl border text-xs">
+<input id="confirm-password" type="password" autocomplete="new-password" required minlength="8" placeholder="Ulangi kata sandi baru" class="w-full p-2.5 rounded-xl border text-xs">
+<button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">Ubah Kata Sandi</button>
+<p id="security-status" class="hidden text-xs font-semibold"></p>
+</form>
+</section>
 
-                    <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 shadow-xs">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-[9px] font-bold text-blue-700 bg-white px-2 py-0.5 rounded shadow-xs border border-slate-200">Driver Profesional</span>
-                            <span class="text-xs font-extrabold text-slate-700 tracking-wider">B 4281 FGY</span>
-                        </div>
-                        <div class="flex items-center space-x-3 mb-3">
-                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150" alt="Driver" class="w-12 h-12 rounded-full object-cover border-2 border-blue-600 shadow">
-                            <div class="flex-1">
-                                <h4 class="font-bold text-slate-900 text-xs">Ahmad Fauzi</h4>
-                                <p class="text-[10px] text-slate-500">Yamaha Nmax • Hitam Metalik</p>
-                                <div class="flex items-center mt-0.5 text-amber-500 text-[11px] font-bold">
-                                    <i class="fa-solid fa-star mr-1"></i> 4.98 <span class="text-slate-400 font-normal ml-1">(2.4k ulasan)</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-2 pt-2.5 border-t border-slate-200/80">
-                            <button type="button" onclick="alert('Menghubungkan ke driver...')" class="py-1.5 bg-white hover:bg-blue-50 text-blue-700 border border-slate-200 rounded-lg transition text-[10px] font-bold shadow-xs"><i class="fa-solid fa-phone mr-1"></i> Telepon</button>
-                            <button type="button" onclick="prompt('Kirim pesan ke driver:')" class="py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition text-[10px] font-bold shadow-xs"><i class="fa-solid fa-comment-dots mr-1"></i> Chat</button>
-                            <button type="button" onclick="cancelOrder()" class="py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-lg transition text-[10px] font-bold shadow-xs"><i class="fa-solid fa-ban mr-1"></i> Batal</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<section class="border border-slate-200 rounded-xl p-3"><h4 class="text-xs font-black mb-2">Ketentuan dan Layanan</h4><p class="text-[11px] text-slate-600">Pastikan alamat pemesanan benar. Tarif merupakan estimasi. Pelanggan dan driver wajib menjaga keselamatan, menghormati privasi, dan menggunakan layanan secara bertanggung jawab.</p></section>
 
-    </div>
+<section class="border border-slate-200 rounded-xl p-3"><h4 class="text-xs font-black mb-2">Riwayat Pemesanan</h4><div id="booking-history-list" class="space-y-2"><p class="text-[10px] text-slate-400">Belum ada riwayat.</p></div></section>
 
-    <!-- MODAL PETA PEMILIHAN -->
-    <div id="map-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-3 md:p-6">
-        <div class="bg-white rounded-3xl max-w-2xl w-full h-[85vh] flex flex-col overflow-hidden shadow-2xl relative">
-            <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                <div>
-                    <h3 class="text-sm font-bold" id="map-modal-title">Pilih Lokasi di Peta</h3>
-                    <p class="text-[10px] text-slate-400">Ketuk titik lokasi pada peta untuk menyematkan pin</p>
-                </div>
-                <button type="button" onclick="closeMapModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-xs"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="flex-1 relative"><div id="picker-map" style="height: 100%; width: 100%;"></div></div>
-            <div class="p-3 bg-white border-t border-slate-100 text-center">
-                <button type="button" onclick="confirmMapSelection()" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md">Konfirmasi Titik Ini</button>
-            </div>
-        </div>
-    </div>
+<section class="border border-slate-200 rounded-2xl p-4">
+<h4 class="text-xs font-black mb-1"><i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> Kotak Saran</h4>
+<form id="suggestion-form" onsubmit="submitSuggestion(event)" class="space-y-2">
+<select id="suggestion-category" class="w-full p-2.5 rounded-xl border bg-white text-xs"><option>Layanan</option><option>Driver</option><option>Aplikasi</option><option>Pembayaran</option><option>Lainnya</option></select>
+<textarea id="suggestion-text" required minlength="5" maxlength="800" rows="3" placeholder="Tulis saran Anda..." class="w-full p-3 rounded-xl border text-xs"></textarea>
+<button type="submit" class="w-full py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold">Kirim Saran</button>
+</form><p id="suggestion-status" class="hidden text-xs mt-2 text-emerald-700 font-semibold"></p>
+</section>
+<div class="grid grid-cols-2 gap-2"><button type="button" onclick="showSavedReviews()" class="p-3 rounded-xl border text-xs font-bold">Riwayat Ulasan</button><button type="button" onclick="showSavedSuggestions()" class="p-3 rounded-xl border text-xs font-bold">Riwayat Saran</button></div>
+<div id="settings-history" class="hidden p-3 rounded-xl bg-slate-50 border text-xs whitespace-pre-wrap"></div>
+</div>
+</div>
+</div>
 
-    <!-- MODAL PEMBAYARAN & RATING -->
-    <div id="rating-modal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-sm w-full max-h-[92vh] overflow-y-auto p-6 text-center shadow-2xl border border-slate-100">
-            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-lg mx-auto mb-3 shadow-inner"><i class="fa-solid fa-circle-check"></i></div>
-            <h3 class="text-base font-black text-slate-900 mb-0.5">Perjalanan Selesai!</h3>
-            <p class="text-[11px] text-slate-500 mb-4">Silakan pilih metode pembayaran dan berikan ulasan driver.</p>
-            
-            <div class="mb-4 text-left">
-                <label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Metode Pembayaran</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <button type="button" onclick="selectPayment('cash')" id="pay-cash" class="p-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-xs font-bold flex items-center justify-center space-x-1.5 transition"><i class="fa-solid fa-money-bill-wave"></i><span>Tunai</span></button>
-                    <button type="button" onclick="selectPayment('qris')" id="pay-qris" class="p-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-xs font-semibold flex items-center justify-center space-x-1.5 transition"><i class="fa-solid fa-qrcode"></i><span>QRIS</span></button>
-                </div>
-            </div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
-            <div class="mb-5 text-left">
-                <label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Beri Rating Driver</label>
-                <div class="flex justify-center space-x-2 py-1 bg-slate-50 rounded-xl border border-slate-100">
-                    <button type="button" onclick="setRating(1)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
-                    <button type="button" onclick="setRating(2)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
-                    <button type="button" onclick="setRating(3)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
-                    <button type="button" onclick="setRating(4)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
-                    <button type="button" onclick="setRating(5)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
-                </div>
-            </div>
+<script>
+let loggedUser = '';
+let customerAuthUser = null;
+let currentOrder = null;
+let selectedService = 'ride';
+let selectedPaymentMethod = 'cash';
+let currentRating = 5;
+let pickerMap = null;
+let liveMap = null;
+let activeTargetType = null;
+let tempCoords = null;
+let pickupCoords = null;
+let destCoords = null;
+let pickerMarker = null;
+let isMinimized = false;
+let statusPollTimer = null;
+let orderSubmitting = false;
+let initialProfile = {};
 
-            <div class="mb-5 text-left">
-                <label for="trip-review" class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Ulasan Perjalanan (Opsional)</label>
-                <textarea id="trip-review" rows="3" maxlength="600" placeholder="Ceritakan pengalaman Anda bersama driver..." class="w-full resize-none p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
-                <p class="mt-1 text-[9px] text-slate-400 text-right"><span id="review-count">0</span>/600 karakter</p>
-            </div>
+const db = () => window.ydSupabase;
+const profileKey = () => 'yd_profile_' + loggedUser;
+const historyKey = () => 'yd_booking_history_' + loggedUser;
+const reviewsKey = () => 'yd_reviews_' + loggedUser;
+const suggestionsKey = () => 'yd_suggestions_' + loggedUser;
 
-            <button type="button" onclick="completeTripAndReset()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition text-xs">Bayar & Beri Ulasan</button>
-        </div>
-    </div>
+function readLocal(key, fallback) {
+    try {
+        const value = JSON.parse(localStorage.getItem(key) || 'null');
+        return value == null ? fallback : value;
+    } catch {
+        return fallback;
+    }
+}
 
-    <!-- MODAL PROFIL & PENGATURAN PELANGGAN -->
-    <div id="settings-modal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[9999] flex items-center justify-center p-3 md:p-6">
-        <div class="bg-white rounded-3xl max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl">
-            <div class="sticky top-0 z-10 p-4 bg-slate-900 text-white flex items-center justify-between rounded-t-3xl">
-                <div>
-                    <h3 class="text-sm font-black">Profil & Pengaturan</h3>
-                    <p class="text-[10px] text-slate-300">Kelola akun dan bantuan pelanggan</p>
-                </div>
-                <button type="button" onclick="closeSettings()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="p-5 space-y-5">
-                <section class="p-4 rounded-2xl bg-blue-50 border border-blue-100">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="text-center">
-                            <img id="profile-photo-preview" src="" alt="Foto profil pelanggan" class="hidden w-14 h-14 rounded-full object-cover border-2 border-blue-200">
-                            <div id="profile-photo-placeholder" class="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg"><i class="fa-solid fa-user"></i></div>
-                            <label for="profile-photo-input" class="block mt-1 text-[9px] font-bold text-blue-700 cursor-pointer">Ganti foto</label>
-                            <input id="profile-photo-input" type="file" accept="image/*" class="hidden" onchange="handleProfilePhoto(event)">
-                        </div>
-                        <div class="flex-1"><h4 class="font-black text-slate-900 text-sm" id="profile-heading">Profil Pelanggan</h4><p class="text-[10px] text-slate-500">Informasi akun Anda</p><p class="text-[9px] text-slate-400 mt-1">Pilih foto dari perangkat Anda</p></div>
-                    </div>
-                    <form id="profile-form" onsubmit="saveProfile(event)" class="space-y-3">
-                        <div><label for="profile-name" class="block text-[10px] font-bold text-slate-500 mb-1">Nama pelanggan</label><input id="profile-name" required maxlength="80" class="w-full p-2.5 rounded-xl border border-slate-200 bg-white text-xs outline-none focus:ring-2 focus:ring-blue-500"></div>
-                        <div><label for="profile-phone" class="block text-[10px] font-bold text-slate-500 mb-1">Nomor telepon</label><input id="profile-phone" type="tel" maxlength="25" placeholder="Masukkan nomor telepon" class="w-full p-2.5 rounded-xl border border-slate-200 bg-white text-xs outline-none focus:ring-2 focus:ring-blue-500"></div>
-                        <div><label for="profile-email" class="block text-[10px] font-bold text-slate-500 mb-1">Email</label><input id="profile-email" type="email" maxlength="120" placeholder="nama@email.com" class="w-full p-2.5 rounded-xl border border-slate-200 bg-white text-xs outline-none focus:ring-2 focus:ring-blue-500"></div>
-                        <button class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold" type="submit"><i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Profil</button>
-                    </form>
-                </section>
+function money(value) {
+    return 'Rp ' + Number(value || 0).toLocaleString('id-ID');
+}
 
-                <section>
-                    <h4 class="text-xs font-black text-slate-800 mb-2"><i class="fa-solid fa-sliders text-blue-600 mr-1"></i> Pengaturan Akun</h4>
-                    <div class="space-y-2">
-                        <details class="border border-slate-200 rounded-xl p-3" open>
-                            <summary class="text-xs font-bold cursor-pointer"><i class="fa-solid fa-shield-halved text-emerald-600 mr-2"></i>1. Pengaturan Keamanan</summary>
-                            <p class="text-[10px] text-slate-500 mt-2 mb-3">Perbarui kata sandi akun. Gunakan kata sandi yang kuat dan jangan bagikan kepada orang lain.</p>
-                            <form id="password-form" onsubmit="changePassword(event)" class="space-y-2">
-                                <input id="current-password" type="password" autocomplete="current-password" required minlength="4" placeholder="Kata sandi saat ini" class="w-full p-2.5 rounded-xl border border-slate-200 text-xs">
-                                <input id="new-password" type="password" autocomplete="new-password" required minlength="8" placeholder="Kata sandi baru (min. 8 karakter)" class="w-full p-2.5 rounded-xl border border-slate-200 text-xs">
-                                <input id="confirm-password" type="password" autocomplete="new-password" required minlength="8" placeholder="Ulangi kata sandi baru" class="w-full p-2.5 rounded-xl border border-slate-200 text-xs">
-                                <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">Ubah Kata Sandi</button>
-                                <p class="text-[9px] text-amber-700">Catatan: fitur demo ini menyimpan status keamanan di browser. Untuk keamanan sungguhan, perubahan kata sandi harus diproses oleh sistem autentikasi/backend.</p>
-                                <p id="security-status" class="hidden text-xs font-semibold"></p>
-                            </form>
-                        </details>
-                        <details class="border border-slate-200 rounded-xl p-3">
-                            <summary class="text-xs font-bold cursor-pointer"><i class="fa-solid fa-file-contract text-blue-600 mr-2"></i>2. Ketentuan dan Layanan</summary>
-                            <div class="text-[11px] text-slate-600 mt-2 space-y-2">
-                                <p><b>Penggunaan aplikasi.</b> Pelanggan wajib memberikan informasi pemesanan yang benar serta menggunakan Ngojek secara bertanggung jawab.</p>
-                                <p><b>Pemesanan dan pembatalan.</b> Periksa lokasi penjemputan dan tujuan sebelum memesan. Pembatalan sebaiknya dilakukan hanya jika diperlukan.</p>
-                                <p><b>Tarif dan pembayaran.</b> Tarif yang ditampilkan merupakan estimasi pada demo ini. Pelanggan harus memastikan pembayaran sesuai metode yang disepakati.</p>
-                                <p><b>Keselamatan dan perilaku.</b> Pelanggan dan driver wajib saling menghormati, menjaga keselamatan, dan tidak melakukan tindakan melanggar hukum.</p>
-                                <p><b>Privasi.</b> Data pada versi demo ini dapat tersimpan di browser perangkat. Ketentuan final perlu disesuaikan dengan kebijakan resmi perusahaan sebelum aplikasi diluncurkan.</p>
-                            </div>
-                        </details>
-                        <details class="border border-slate-200 rounded-xl p-3">
-                            <summary class="text-xs font-bold cursor-pointer"><i class="fa-solid fa-clock-rotate-left text-violet-600 mr-2"></i>3. Riwayat Pemesanan</summary>
-                            <p class="text-[10px] text-slate-500 mt-2 mb-2">Daftar perjalanan yang telah selesai pada akun ini.</p>
-                            <div id="booking-history-list" class="space-y-2"><p class="text-[10px] text-slate-400">Belum ada riwayat pemesanan selesai.</p></div>
-                        </details>
-                        <details class="border border-slate-200 rounded-xl p-3">
-                            <summary class="text-xs font-bold cursor-pointer"><i class="fa-solid fa-building text-amber-600 mr-2"></i>4. Tentang Kami</summary>
-                            <div class="text-[11px] text-slate-600 mt-2 space-y-2">
-                                <p class="font-black text-slate-900 text-sm">Ngojek</p>
-                                <p>Ngojek adalah konsep layanan pemesanan transportasi yang membantu pelanggan merencanakan perjalanan dari lokasi penjemputan ke tempat tujuan melalui layanan kendaraan.</p>
-                                <p><b>Misi kami:</b> menghadirkan pengalaman pemesanan yang mudah, informatif, dan mengutamakan kenyamanan serta keselamatan pelanggan.</p>
-                                <p class="text-[10px] text-slate-400">Informasi perusahaan, alamat, kontak resmi, dan legalitas dapat ditambahkan setelah data perusahaan ditetapkan.</p>
-                            </div>
-                        </details>
-                    </div>
-                </section>
+async function initializeCustomer() {
+    if (!db()) {
+        alert('Koneksi Supabase tidak tersedia. Periksa yd-config.js dan koneksi internet.');
+        return;
+    }
 
-                <section class="border border-slate-200 rounded-2xl p-4">
-                    <h4 class="text-xs font-black text-slate-800 mb-1"><i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> Kotak Saran</h4>
-                    <p class="text-[10px] text-slate-500 mb-3">Punya ide atau masukan untuk Ngojek? Tulis di bawah ini.</p>
-                    <form id="suggestion-form" onsubmit="submitSuggestion(event)" class="space-y-2">
-                        <select id="suggestion-category" class="w-full p-2.5 rounded-xl border border-slate-200 bg-white text-xs">
-                            <option value="Layanan">Layanan</option><option value="Driver">Driver</option><option value="Aplikasi">Aplikasi</option><option value="Pembayaran">Pembayaran</option><option value="Lainnya">Lainnya</option>
-                        </select>
-                        <textarea id="suggestion-text" required minlength="5" maxlength="800" rows="3" placeholder="Tulis saran atau masukan Anda..." class="w-full resize-y p-3 rounded-xl border border-slate-200 text-xs outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                        <button type="submit" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"><i class="fa-solid fa-paper-plane mr-1"></i> Kirim Saran</button>
-                    </form>
-                    <p id="suggestion-status" class="hidden text-xs mt-2 text-emerald-700 font-semibold"></p>
-                </section>
+    const { data, error } = await db().auth.getUser();
 
-                <section class="grid grid-cols-2 gap-2">
-                    <button type="button" onclick="showSavedReviews()" class="p-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50"><i class="fa-solid fa-star text-amber-400 mr-1"></i> Riwayat Ulasan</button>
-                    <button type="button" onclick="showSavedSuggestions()" class="p-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50"><i class="fa-solid fa-inbox text-blue-500 mr-1"></i> Riwayat Saran</button>
-                </section>
-                <div id="settings-history" class="hidden p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 whitespace-pre-wrap"></div>
-            </div>
-        </div>
-    </div>
+    if (error || !data.user) {
+        window.location.replace('login.html');
+        return;
+    }
 
-    <!-- Scripts Leaflet & Logic -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
-    
-    <script>
-        const initialProfile = JSON.parse(localStorage.getItem('yd_profile_' + loggedUser) || '{}');
-        document.getElementById('user-display-name').innerText = initialProfile.name || loggedUser;
-        document.getElementById('profile-heading').innerText = initialProfile.name || loggedUser;
+    customerAuthUser = data.user;
+    loggedUser = customerAuthUser.email || customerAuthUser.id;
+    initialProfile = readLocal(profileKey(), {});
 
-        const reviewBox = document.getElementById('trip-review');
-        reviewBox.addEventListener('input', () => document.getElementById('review-count').innerText = reviewBox.value.length);
+    const meta = customerAuthUser.user_metadata || {};
+    const name = initialProfile.name || meta.full_name || meta.name ||
+        (customerAuthUser.email || 'Pengguna').split('@')[0];
 
-        function openSettings() {
-            const profile = JSON.parse(localStorage.getItem('yd_profile_' + loggedUser) || '{}');
-            document.getElementById('profile-name').value = profile.name || loggedUser;
-            document.getElementById('profile-phone').value = profile.phone || '';
-            document.getElementById('profile-email').value = profile.email || '';
-            renderProfilePhoto(profile.photo || '');
-            renderBookingHistory();
-            document.getElementById('settings-modal').classList.remove('hidden');
-        }
-        function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
-        function saveProfile(event) {
-            event.preventDefault();
-            const previousProfile = JSON.parse(localStorage.getItem('yd_profile_' + loggedUser) || '{}');
-            const profile = {
-                name: document.getElementById('profile-name').value.trim(),
-                phone: document.getElementById('profile-phone').value.trim(),
-                email: document.getElementById('profile-email').value.trim(),
-                photo: previousProfile.photo || ''
-            };
-            localStorage.setItem('yd_profile_' + loggedUser, JSON.stringify(profile));
-            document.getElementById('user-display-name').innerText = profile.name;
-            document.getElementById('profile-heading').innerText = profile.name;
-            alert('Profil berhasil disimpan pada browser ini.');
-        }
-        function renderProfilePhoto(photoData) {
-            const img = document.getElementById('profile-photo-preview');
-            const placeholder = document.getElementById('profile-photo-placeholder');
-            if (photoData) {
-                img.src = photoData;
-                img.classList.remove('hidden');
-                placeholder.classList.add('hidden');
-            } else {
-                img.removeAttribute('src');
-                img.classList.add('hidden');
-                placeholder.classList.remove('hidden');
-            }
-        }
-        function handleProfilePhoto(event) {
-            const file = event.target.files && event.target.files[0];
-            if (!file) return;
-            if (!file.type.startsWith('image/')) { alert('Pilih file gambar yang valid.'); event.target.value = ''; return; }
-            if (file.size > 2 * 1024 * 1024) { alert('Ukuran foto maksimal 2 MB.'); event.target.value = ''; return; }
-            const reader = new FileReader();
-            reader.onload = function() {
-                const profiles = JSON.parse(localStorage.getItem('yd_profile_' + loggedUser) || '{}');
-                profiles.name = profiles.name || document.getElementById('profile-name').value.trim() || loggedUser;
-                profiles.phone = profiles.phone || document.getElementById('profile-phone').value.trim();
-                profiles.email = profiles.email || document.getElementById('profile-email').value.trim();
-                profiles.photo = reader.result;
-                try {
-                    localStorage.setItem('yd_profile_' + loggedUser, JSON.stringify(profiles));
-                    renderProfilePhoto(profiles.photo);
-                    alert('Foto profil berhasil diperbarui.');
-                } catch (error) {
-                    alert('Foto gagal disimpan. Coba gunakan gambar yang lebih kecil.');
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-        function changePassword(event) {
-            event.preventDefault();
-            const current = document.getElementById('current-password').value;
-            const next = document.getElementById('new-password').value;
-            const confirmNext = document.getElementById('confirm-password').value;
-            const status = document.getElementById('security-status');
-            if (next.length < 8) { alert('Kata sandi baru minimal 8 karakter.'); return; }
-            if (next !== confirmNext) { alert('Konfirmasi kata sandi baru tidak cocok.'); return; }
-            const key = 'yd_demo_password_' + loggedUser;
-            const saved = localStorage.getItem(key);
-            if (saved && saved !== current) {
-                status.innerText = 'Kata sandi saat ini tidak cocok dengan kata sandi demo yang tersimpan.';
-                status.className = 'text-xs font-semibold text-red-600';
-                return;
-            }
-            if (!saved) {
-                status.innerText = 'Belum ada kata sandi demo yang tersimpan untuk diverifikasi. Perubahan tidak diterapkan agar akun login Anda tidak terkunci.';
-                status.className = 'text-xs font-semibold text-amber-700';
-                status.classList.remove('hidden');
-                return;
-            }
-            localStorage.setItem(key, next);
-            document.getElementById('password-form').reset();
-            status.innerText = 'Kata sandi demo berhasil diubah di browser ini.';
-            status.className = 'text-xs font-semibold text-emerald-700';
-        }
-        function renderBookingHistory() {
-            const list = document.getElementById('booking-history-list');
-            const history = JSON.parse(localStorage.getItem('yd_booking_history_' + loggedUser) || '[]');
-            if (!history.length) {
-                list.innerHTML = '<p class="text-[10px] text-slate-400">Belum ada riwayat pemesanan selesai.</p>';
-                return;
-            }
-            list.innerHTML = history.map(item => `
-                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <div class="flex justify-between gap-2"><b class="text-[11px] text-slate-800">${item.service}</b><span class="text-[9px] text-emerald-700 font-bold">Selesai</span></div>
-                    <p class="text-[10px] text-slate-500 mt-1">${item.date}</p>
-                    <p class="text-[10px] text-slate-600 mt-1">Dari: ${item.pickup}</p>
-                    <p class="text-[10px] text-slate-600">Ke: ${item.destination}</p>
-                    <p class="text-[10px] font-bold text-blue-700 mt-1">${item.fare} · ${item.payment.toUpperCase()}</p>
-                    <p class="text-[10px] text-amber-500 mt-1">${'★'.repeat(item.rating)}${'☆'.repeat(5-item.rating)} <span class="text-slate-500">${item.review ? '— ' + item.review : ''}</span></p>
-                </div>`).join('');
-        }
-        function submitSuggestion(event) {
-            event.preventDefault();
-            const suggestions = JSON.parse(localStorage.getItem('yd_suggestions_' + loggedUser) || '[]');
-            suggestions.unshift({
-                category: document.getElementById('suggestion-category').value,
-                text: document.getElementById('suggestion-text').value.trim(),
-                date: new Date().toLocaleString('id-ID')
+    document.getElementById('user-display-name').innerText = name;
+    document.getElementById('profile-heading').innerText = name;
+    document.getElementById('profile-name').value = name;
+    document.getElementById('profile-email').value =
+        initialProfile.email || customerAuthUser.email || '';
+    document.getElementById('profile-phone').value =
+        initialProfile.phone || meta.phone || '';
+
+    renderProfilePhoto(initialProfile.photo || '');
+    renderBookingHistory();
+
+    document.getElementById('trip-review').addEventListener('input', event => {
+        document.getElementById('review-count').innerText = event.target.value.length;
+    });
+
+    await restoreCustomerOrder();
+}
+
+function selectService(type) {
+    if (!['ride', 'car'].includes(type)) return;
+    selectedService = type;
+
+    ['ride', 'car'].forEach(t => {
+        const btn = document.getElementById('btn-' + t);
+        const active = t === type;
+        btn.className = active
+            ? 'w-full flex flex-col items-center justify-center p-3 rounded-xl border-2 border-blue-600 bg-blue-50/40 shadow-sm'
+            : 'w-full flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white';
+
+        btn.querySelector('i').className =
+            'fa-solid ' + (t === 'ride' ? 'fa-motorcycle' : 'fa-car') +
+            ' text-base mb-1 ' + (active ? 'text-blue-600' : 'text-slate-500');
+        btn.querySelector('span').className =
+            'text-[11px] ' + (active ? 'font-bold text-slate-700' : 'font-semibold text-slate-600');
+    });
+
+    document.querySelector('#submit-btn span').innerText =
+        'Pesan Your' + (type === 'ride' ? 'Ride' : 'Car') + ' Sekarang';
+}
+
+function addRealMapTiles(map) {
+    L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        { subdomains: 'abcd', maxZoom: 19, attribution: '© OpenStreetMap contributors © CARTO' }
+    ).addTo(map);
+}
+
+function openMapModal(type) {
+    activeTargetType = type;
+    document.getElementById('map-modal').classList.remove('hidden');
+    document.getElementById('map-modal-title').innerText =
+        type === 'pickup' ? 'Pilih Lokasi Penjemputan' : 'Pilih Lokasi Tujuan';
+
+    setTimeout(() => {
+        if (!pickerMap) {
+            pickerMap = L.map('picker-map').setView([-6.1754, 106.8272], 13);
+            addRealMapTiles(pickerMap);
+            L.control.zoom({ position: 'topright' }).addTo(pickerMap);
+
+            pickerMap.on('click', event => {
+                tempCoords = [event.latlng.lat, event.latlng.lng];
+                if (pickerMarker) pickerMap.removeLayer(pickerMarker);
+
+                pickerMarker = L.marker(tempCoords).addTo(pickerMap);
             });
-            localStorage.setItem('yd_suggestions_' + loggedUser, JSON.stringify(suggestions));
-            document.getElementById('suggestion-text').value = '';
-            const status = document.getElementById('suggestion-status');
-            status.innerText = 'Saran tersimpan di perangkat ini. Untuk diterima pengelola, aplikasi perlu dihubungkan ke backend.';
-            status.classList.remove('hidden');
+        } else {
+            pickerMap.invalidateSize();
         }
-        function showSavedReviews() {
-            const reviews = JSON.parse(localStorage.getItem('yd_reviews_' + loggedUser) || '[]');
-            showHistory(reviews.map(r => `${r.date} — ${r.rating}/5 bintang\\n${r.review || '(tanpa komentar)'}`).join('\\n\\n'), 'Belum ada ulasan tersimpan.');
-        }
-        function showSavedSuggestions() {
-            const suggestions = JSON.parse(localStorage.getItem('yd_suggestions_' + loggedUser) || '[]');
-            showHistory(suggestions.map(r => `${r.date} — ${r.category}\\n${r.text}`).join('\\n\\n'), 'Belum ada saran tersimpan.');
-        }
-        function showHistory(content, emptyMessage) {
-            const box = document.getElementById('settings-history');
-            box.textContent = content || emptyMessage;
-            box.classList.remove('hidden');
-        }
+    }, 200);
+}
 
+function closeMapModal() {
+    document.getElementById('map-modal').classList.add('hidden');
+}
 
-        function handleLogout() {
-            if (confirm("Apakah Anda ingin keluar dari akun?")) {
-                localStorage.removeItem('yd_logged_in_user');
-                window.location.href = 'login.html';
-            }
-        }
+function locationInputChanged(type) {
+    if (type === 'pickup') {
+        pickupCoords = null;
+        document.getElementById('pickup-label-status').innerText = 'Alamat diketik';
+    } else {
+        destCoords = null;
+        document.getElementById('dest-label-status').innerText = 'Alamat diketik';
+    }
 
-        let pickerMap = null, liveMap = null, activeTargetType = null, tempCoords = null, pickupCoords = null, destCoords = null;
-        let pickerMarker = null, liveDriverMarker = null, routingControl = null, isMinimized = false;
-        let selectedPaymentMethod = 'cash', currentRating = 5;
+    document.getElementById('distance-val').innerText = '0.0';
+    document.getElementById('duration-val').innerText = '0';
+    document.getElementById('fare-val').innerText = 'Rp 0';
+}
 
-        function selectService(type) {
-            ['ride', 'car'].forEach(t => {
-                const btn = document.getElementById(`btn-${t}`);
-                btn.className = "w-full min-w-0 flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 transition";
-                btn.querySelector('i').className = btn.querySelector('i').className.replace('text-blue-600', 'text-slate-500');
-                btn.querySelector('span').className = "text-[11px] font-semibold text-slate-600";
-            });
-            const activeBtn = document.getElementById(`btn-${type}`);
-            activeBtn.className = "w-full min-w-0 flex flex-col items-center justify-center p-3 rounded-xl border-2 border-blue-600 bg-blue-50/40 transition shadow-sm";
-            activeBtn.querySelector('i').className = activeBtn.querySelector('i').className.replace('text-slate-500', 'text-blue-600');
-            activeBtn.querySelector('span').className = "text-[11px] font-bold text-slate-700";
-            document.querySelector('#submit-btn span').innerText = `Pesan Your${type.charAt(0).toUpperCase() + type.slice(1)} Sekarang`;
-        }
+function locationInputBlurred() {
+    if (
+        document.getElementById('pickup-input').value.trim() &&
+        document.getElementById('dest-input').value.trim()
+    ) calculateEstimate();
+}
 
+async function geocodeAddress(address) {
+    const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=id&q=' +
+        encodeURIComponent(address);
+    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error('Pencarian alamat tidak tersedia.');
+    const results = await response.json();
+    if (!results.length) throw new Error('Alamat tidak ditemukan: ' + address);
+    return [Number(results[0].lat), Number(results[0].lon)];
+}
 
-        // Peta jalan menggunakan Esri sebagai sumber utama agar tidak terkena blokir
-        // tile.openstreetmap.org pada lingkungan hosting tertentu. CARTO menjadi cadangan.
-        function addRealMapTiles(map) {
-            const esri = L.tileLayer(
-                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-                { maxZoom: 19, attribution: 'Tiles © Esri — Sources: Esri, HERE, Garmin, OpenStreetMap contributors' }
-            );
-            let fallbackUsed = false;
-            esri.once('tileerror', function() {
-                if (fallbackUsed || !map.hasLayer(esri)) return;
-                fallbackUsed = true;
-                map.removeLayer(esri);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                    subdomains: 'abcd', maxZoom: 19,
-                    attribution: '© OpenStreetMap contributors © CARTO'
-                }).addTo(map);
-            });
-            esri.addTo(map);
-        }
+async function reverseGeocode(lat, lon) {
+    try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Lokasi tidak tersedia');
+        const data = await response.json();
+        return data.display_name || `Lokasi (${lat.toFixed(5)}, ${lon.toFixed(5)})`;
+    } catch {
+        return `Lokasi (${lat.toFixed(5)}, ${lon.toFixed(5)})`;
+    }
+}
 
-        function openMapModal(type) {
-            activeTargetType = type;
-            document.getElementById('map-modal').classList.remove('hidden');
-            document.getElementById('map-modal-title').innerText = type === 'pickup' ? "Pilih Lokasi Penjemputan" : "Pilih Lokasi Tujuan";
-            setTimeout(() => {
-                if (!pickerMap) {
-                    pickerMap = L.map('picker-map', { zoomControl: false }).setView([-6.1754, 106.8272], 13);
-                    addRealMapTiles(pickerMap);
-                    L.control.zoom({ position: 'topright' }).addTo(pickerMap);
-                    pickerMap.on('click', function(e) {
-                        tempCoords = [e.latlng.lat, e.latlng.lng];
-                        if (pickerMarker) pickerMap.removeLayer(pickerMarker);
-                        pickerMarker = L.marker(tempCoords, {
-                            icon: L.divIcon({ html: `<div style="background-color:${activeTargetType === 'pickup' ? '#2563eb' : '#ef4444'};width:16px;height:16px;border:3px solid white;border-radius:50%;box-shadow:0 3px 6px rgba(0,0,0,0.4)"></div>` })
-                        }).addTo(pickerMap);
-                    });
-                } else { pickerMap.invalidateSize(); }
-            }, 200);
-        }
+async function confirmMapSelection() {
+    if (!tempCoords) {
+        alert('Ketuk titik di peta terlebih dahulu.');
+        return;
+    }
 
-        function closeMapModal() { document.getElementById('map-modal').classList.add('hidden'); }
+    const coords = [...tempCoords];
+    const type = activeTargetType;
+    tempCoords = null;
 
-        // Input alamat boleh diketik langsung; tombol Peta tetap tersedia untuk memilih pin.
-        function locationInputChanged(type) {
-            const inputId = type === 'pickup' ? 'pickup-input' : 'dest-input';
-            const statusId = type === 'pickup' ? 'pickup-label-status' : 'dest-label-status';
-            if (type === 'pickup') pickupCoords = null;
-            else destCoords = null;
-            const value = document.getElementById(inputId).value.trim();
-            document.getElementById(statusId).innerText = value ? 'Alamat diketik' : 'Ketik alamat atau pilih peta';
-            document.getElementById('distance-val').innerText = '0.0';
-            document.getElementById('duration-val').innerText = '0';
-            document.getElementById('fare-val').innerText = 'Rp 0';
+    if (type === 'pickup') pickupCoords = coords;
+    else destCoords = coords;
+
+    closeMapModal();
+
+    const input = document.getElementById(type === 'pickup' ? 'pickup-input' : 'dest-input');
+    const status = document.getElementById(type === 'pickup' ? 'pickup-label-status' : 'dest-label-status');
+
+    input.value = await reverseGeocode(coords[0], coords[1]);
+    status.innerText = 'Terpilih ✓';
+    await calculateEstimate();
+}
+
+async function calculateEstimate() {
+    const pickup = document.getElementById('pickup-input').value.trim();
+    const destination = document.getElementById('dest-input').value.trim();
+    if (!pickup || !destination) return;
+
+    const distanceEl = document.getElementById('distance-val');
+    const durationEl = document.getElementById('duration-val');
+    const fareEl = document.getElementById('fare-val');
+
+    distanceEl.innerText = '...';
+    durationEl.innerText = '...';
+    fareEl.innerText = 'Menghitung...';
+
+    try {
+        if (!pickupCoords) {
+            document.getElementById('pickup-label-status').innerText = 'Mencari alamat...';
+            pickupCoords = await geocodeAddress(pickup);
+            document.getElementById('pickup-label-status').innerText = 'Alamat ditemukan ✓';
         }
 
-        function locationInputBlurred() {
-            const pickup = document.getElementById('pickup-input').value.trim();
-            const dest = document.getElementById('dest-input').value.trim();
-            if (pickup && dest) calculateEstimate();
+        if (!destCoords) {
+            document.getElementById('dest-label-status').innerText = 'Mencari alamat...';
+            destCoords = await geocodeAddress(destination);
+            document.getElementById('dest-label-status').innerText = 'Alamat ditemukan ✓';
         }
 
-        async function geocodeAddress(address) {
-            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=id&q=${encodeURIComponent(address)}`;
-            const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
-            if (!response.ok) throw new Error('Pencarian alamat tidak tersedia');
-            const results = await response.json();
-            if (!results.length) throw new Error(`Alamat tidak ditemukan: ${address}`);
-            return [Number(results[0].lat), Number(results[0].lon)];
+        const coords = `${pickupCoords[1]},${pickupCoords[0]};${destCoords[1]},${destCoords[0]}`;
+        const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`);
+
+        if (!response.ok) throw new Error('Rute tidak tersedia.');
+
+        const result = await response.json();
+        if (result.code !== 'Ok' || !result.routes?.length) throw new Error('Rute tidak ditemukan.');
+
+        const route = result.routes[0];
+        const distance = route.distance / 1000;
+        const minutes = Math.max(1, Math.round(route.duration / 60));
+
+        distanceEl.innerText = distance.toFixed(1);
+        durationEl.innerText = String(minutes);
+        fareEl.innerText = money(Math.round(distance * 6500 + 3500));
+    } catch (error) {
+        distanceEl.innerText = '—';
+        durationEl.innerText = '—';
+        fareEl.innerText = 'Rute tidak tersedia';
+        console.error('Gagal menghitung rute:', error);
+        throw error;
+    }
+}
+
+async function handleOrder(event) {
+    event.preventDefault();
+    if (orderSubmitting) return;
+
+    if (!db() || !customerAuthUser) {
+        alert('Sesi login tidak tersedia. Silakan login kembali.');
+        window.location.replace('login.html');
+        return;
+    }
+
+    const pickupAddress = document.getElementById('pickup-input').value.trim();
+    const destinationAddress = document.getElementById('dest-input').value.trim();
+
+    if (!pickupAddress || !destinationAddress) {
+        alert('Isi alamat penjemputan dan tujuan terlebih dahulu.');
+        return;
+    }
+
+    orderSubmitting = true;
+    const button = document.getElementById('submit-btn');
+    button.disabled = true;
+    button.querySelector('span').innerText = 'Memproses pesanan...';
+
+    try {
+        if (!pickupCoords) pickupCoords = await geocodeAddress(pickupAddress);
+        if (!destCoords) destCoords = await geocodeAddress(destinationAddress);
+
+        await calculateEstimate();
+
+        const distance = Number(document.getElementById('distance-val').innerText);
+        const duration = Number(document.getElementById('duration-val').innerText);
+        const fare = Number(document.getElementById('fare-val').innerText.replace(/[^\d]/g, ''));
+
+        if (!Number.isFinite(distance) || !Number.isFinite(duration) ||
+            !Number.isFinite(fare) || distance <= 0 || fare <= 0) {
+            throw new Error('Estimasi tarif tidak valid. Periksa kembali lokasi.');
         }
 
-        async function reverseGeocode(lat, lon) {
-            try {
-                const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`;
-                const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
-                if (!response.ok) throw new Error('Geocoding tidak tersedia');
-                const data = await response.json();
-                return data.display_name || `Lokasi (${lat.toFixed(5)}, ${lon.toFixed(5)})`;
-            } catch (error) {
-                return `Lokasi (${lat.toFixed(5)}, ${lon.toFixed(5)})`;
-            }
+        const profile = readLocal(profileKey(), {});
+        const metadata = customerAuthUser.user_metadata || {};
+        const customerName = profile.name || metadata.full_name || metadata.name ||
+            (customerAuthUser.email || 'Pelanggan').split('@')[0];
+
+        const orderNo = 'YD' + Date.now().toString() +
+            Math.floor(100 + Math.random() * 900).toString();
+
+        const payload = {
+            order_no: orderNo,
+            customer_user_id: customerAuthUser.id,
+            customer_name: customerName,
+            customer_phone: profile.phone || metadata.phone || null,
+            customer_email: customerAuthUser.email || profile.email || null,
+            service_type: selectedService,
+            pickup_address: pickupAddress,
+            destination_address: destinationAddress,
+            pickup_lat: pickupCoords[0],
+            pickup_lng: pickupCoords[1],
+            destination_lat: destCoords[0],
+            destination_lng: destCoords[1],
+            distance_km: distance,
+            duration_minutes: duration,
+            fare: fare,
+            payment_method: null,
+            status: 'available',
+            driver_user_id: null
+        };
+
+        const { data, error } = await db()
+            .from('driver_orders')
+            .insert(payload)
+            .select('*')
+            .single();
+
+        if (error) {
+            console.error('Supabase insert error:', error);
+            throw new Error('Pesanan gagal disimpan: ' + error.message);
         }
 
-        async function confirmMapSelection() {
-            if (!tempCoords) { alert("Ketuk titik di peta terlebih dahulu."); return; }
-            const coords = [...tempCoords];
-            const target = activeTargetType;
-            const inputId = target === 'pickup' ? 'pickup-input' : 'dest-input';
-            const statusId = target === 'pickup' ? 'pickup-label-status' : 'dest-label-status';
-            document.getElementById(inputId).value = 'Mencari nama lokasi...';
-            document.getElementById(statusId).innerText = 'Memuat...';
+        currentOrder = data;
+        localStorage.setItem('yd_active_order_' + customerAuthUser.id, data.id);
 
-            if (target === 'pickup') pickupCoords = coords;
-            else destCoords = coords;
+        showCustomerOrder();
+        startOrderPolling();
+    } catch (error) {
+        console.error(error);
+        alert(error.message || 'Pesanan gagal dibuat. Silakan coba lagi.');
+    } finally {
+        orderSubmitting = false;
+        button.disabled = false;
+        button.querySelector('span').innerText =
+            'Pesan Your' + (selectedService === 'ride' ? 'Ride' : 'Car') + ' Sekarang';
+    }
+}
 
-            tempCoords = null;
-            closeMapModal();
-            const label = await reverseGeocode(coords[0], coords[1]);
-            document.getElementById(inputId).value = label;
-            document.getElementById(statusId).innerText = 'Terpilih ✓';
-            calculateEstimate();
+function showCustomerOrder() {
+    document.getElementById('form-section').classList.add('hidden');
+    document.getElementById('active-order-section').classList.remove('hidden');
+
+    document.getElementById('active-dist').innerText =
+        Number(currentOrder.distance_km || 0).toFixed(1);
+    document.getElementById('active-duration').innerText =
+        Number(currentOrder.duration_minutes || 0) + ' Menit';
+    document.getElementById('active-fare').innerText = money(currentOrder.fare);
+    document.getElementById('active-order-number').innerText =
+        currentOrder.order_no || currentOrder.id;
+
+    updateCustomerOrderStatus(currentOrder.status);
+    renderCustomerOrderMap();
+}
+
+function updateCustomerOrderStatus(status) {
+    const titles = {
+        available: 'Menunggu driver menerima pesanan',
+        assigned: 'Pesanan diterima driver',
+        completed: 'Perjalanan selesai',
+        cancelled: 'Pesanan dibatalkan'
+    };
+
+    document.getElementById('active-status-title').innerText =
+        titles[status] || 'Memeriksa status pesanan...';
+
+    document.getElementById('active-status-badge').innerText =
+        status === 'available' ? 'Menunggu' :
+        status === 'assigned' ? 'Driver ditemukan' :
+        status === 'completed' ? 'Selesai' :
+        status === 'cancelled' ? 'Dibatalkan' : 'Status';
+
+    document.getElementById('status-dot').className =
+        status === 'completed' ? 'w-2.5 h-2.5 bg-emerald-500 rounded-full' :
+        status === 'cancelled' ? 'w-2.5 h-2.5 bg-red-500 rounded-full' :
+        'w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping';
+
+    const driverName = document.getElementById('driver-name');
+    const driverVehicle = document.getElementById('driver-vehicle');
+    const plate = document.getElementById('driver-plate');
+
+    if (status === 'available') {
+        driverName.innerText = 'Menunggu driver menerima pesanan';
+        driverVehicle.innerText = 'Informasi driver akan tersedia setelah pesanan diterima.';
+        plate.innerText = 'Menunggu';
+    } else if (status === 'assigned') {
+        driverName.innerText = 'Driver telah menerima pesanan';
+        driverVehicle.innerText = 'Pesanan sudah diambil oleh driver.';
+        plate.innerText = 'Diterima';
+    } else if (status === 'completed') {
+        driverName.innerText = 'Perjalanan selesai';
+        driverVehicle.innerText = 'Terima kasih telah menggunakan YourDriver.';
+        plate.innerText = 'Selesai';
+        stopOrderPolling();
+        document.getElementById('rating-modal').classList.remove('hidden');
+    } else if (status === 'cancelled') {
+        driverName.innerText = 'Pesanan dibatalkan';
+        driverVehicle.innerText = 'Pesanan ini sudah tidak aktif.';
+        plate.innerText = 'Batal';
+        stopOrderPolling();
+    }
+}
+
+function renderCustomerOrderMap() {
+    if (!pickupCoords || !destCoords) return;
+
+    setTimeout(() => {
+        if (!liveMap) {
+            liveMap = L.map('live-map', { zoomControl: false });
+            addRealMapTiles(liveMap);
         }
 
-        async function calculateEstimate() {
-            const pickupAddress = document.getElementById('pickup-input').value.trim();
-            const destAddress = document.getElementById('dest-input').value.trim();
-            if (!pickupAddress || !destAddress) return;
-            const distanceEl = document.getElementById('distance-val');
-            const durationEl = document.getElementById('duration-val');
-            const fareEl = document.getElementById('fare-val');
-            distanceEl.innerText = '...';
-            durationEl.innerText = '...';
-            fareEl.innerText = 'Menghitung...';
+        liveMap.invalidateSize();
 
-            try {
-                if (!pickupCoords) {
-                    document.getElementById('pickup-label-status').innerText = 'Mencari alamat...';
-                    pickupCoords = await geocodeAddress(pickupAddress);
-                    document.getElementById('pickup-label-status').innerText = 'Alamat ditemukan ✓';
-                }
-                if (!destCoords) {
-                    document.getElementById('dest-label-status').innerText = 'Mencari alamat...';
-                    destCoords = await geocodeAddress(destAddress);
-                    document.getElementById('dest-label-status').innerText = 'Alamat ditemukan ✓';
-                }
-                const coords = `${pickupCoords[1]},${pickupCoords[0]};${destCoords[1]},${destCoords[0]}`;
-                const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`);
-                if (!response.ok) throw new Error('Rute tidak tersedia');
-                const data = await response.json();
-                if (data.code !== 'Ok' || !data.routes || !data.routes.length) throw new Error('Rute tidak ditemukan');
-                const route = data.routes[0];
-                const dist = route.distance / 1000;
-                const minutes = Math.max(1, Math.round(route.duration / 60));
-                distanceEl.innerText = dist.toFixed(1);
-                durationEl.innerText = String(minutes);
-                fareEl.innerText = `Rp ${Math.round(dist * 6500 + 3500).toLocaleString('id-ID')}`;
-            } catch (error) {
-                if (!pickupCoords) document.getElementById('pickup-label-status').innerText = 'Alamat belum ditemukan';
-                if (!destCoords) document.getElementById('dest-label-status').innerText = 'Alamat belum ditemukan';
-                distanceEl.innerText = '—';
-                durationEl.innerText = '—';
-                fareEl.innerText = error.message && error.message.startsWith('Alamat tidak ditemukan') ? 'Periksa alamat' : 'Rute tidak tersedia';
-                console.error('Gagal menghitung rute:', error);
-            }
-        }
-
-        function toggleMinimizePanel() {
-            isMinimized = !isMinimized;
-            document.getElementById('panel-content').classList.toggle('hidden', isMinimized);
-            document.getElementById('minimize-text').innerText = isMinimized ? "Maximize ▴" : "Minimize ▾";
-            document.getElementById('bottom-panel').style.transform = isMinimized ? "translateY(70%)" : "translateY(0)";
-        }
-
-        function selectPayment(method) {
-            selectedPaymentMethod = method;
-            document.getElementById('pay-cash').className = method === 'cash' ? "p-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-xs font-bold flex items-center justify-center space-x-1.5 transition" : "p-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-xs font-semibold flex items-center justify-center space-x-1.5 transition";
-            document.getElementById('pay-qris').className = method === 'qris' ? "p-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-xs font-bold flex items-center justify-center space-x-1.5 transition" : "p-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-xs font-semibold flex items-center justify-center space-x-1.5 transition";
-        }
-
-        function setRating(score) {
-            currentRating = score;
-            document.querySelectorAll('.star-btn').forEach((star, idx) => {
-                star.className = idx < score ? "star-btn text-amber-400 text-xl" : "star-btn text-slate-300 text-xl";
+        if (window.customerOrderLayers) {
+            window.customerOrderLayers.forEach(layer => {
+                if (liveMap.hasLayer(layer)) liveMap.removeLayer(layer);
             });
         }
 
-        async function handleOrder(e) {
-            e.preventDefault();
-            const pickupAddress = document.getElementById('pickup-input').value.trim();
-            const destAddress = document.getElementById('dest-input').value.trim();
-            if (!pickupAddress || !destAddress) { alert("Isi alamat penjemputan dan tujuan, atau pilih titiknya lewat tombol Peta."); return; }
-            try {
-                if (!pickupCoords) {
-                    document.getElementById('pickup-label-status').innerText = 'Mencari alamat...';
-                    pickupCoords = await geocodeAddress(pickupAddress);
-                    document.getElementById('pickup-label-status').innerText = 'Alamat ditemukan ✓';
-                }
-                if (!destCoords) {
-                    document.getElementById('dest-label-status').innerText = 'Mencari alamat...';
-                    destCoords = await geocodeAddress(destAddress);
-                    document.getElementById('dest-label-status').innerText = 'Alamat ditemukan ✓';
-                }
-                await calculateEstimate();
-                if (document.getElementById('distance-val').innerText === '—') {
-                    alert("Rute belum bisa dihitung. Periksa alamat atau pilih lokasi melalui tombol Peta.");
-                    return;
-                }
-            } catch (error) {
-                alert(error.message || "Alamat tidak dapat ditemukan. Coba perjelas alamat atau pilih lewat peta.");
-                return;
-            }
-            document.getElementById('form-section').classList.add('hidden');
-            document.getElementById('active-order-section').classList.remove('hidden');
+        const pickupMarker = L.marker(pickupCoords).addTo(liveMap)
+            .bindPopup('Lokasi penjemputan');
+        const destMarker = L.marker(destCoords).addTo(liveMap)
+            .bindPopup('Lokasi tujuan');
 
-            document.getElementById('active-dist').innerText = document.getElementById('distance-val').innerText;
-            document.getElementById('active-duration').innerText = document.getElementById('duration-val').innerText + " Menit";
-            document.getElementById('active-fare').innerText = document.getElementById('fare-val').innerText;
+        window.customerOrderLayers = [pickupMarker, destMarker];
+        liveMap.fitBounds(L.latLngBounds([pickupCoords, destCoords]), { padding: [35, 35] });
+    }, 250);
+}
 
-            setTimeout(() => {
-                if (!liveMap) {
-                    liveMap = L.map('live-map', { zoomControl: false }).setView(pickupCoords, 14);
-                    addRealMapTiles(liveMap);
-                } else { liveMap.invalidateSize(); }
+async function restoreCustomerOrder() {
+    if (!customerAuthUser) return;
 
-                let driverStart = [pickupCoords[0] + 0.005, pickupCoords[1] + 0.005];
-                L.marker(pickupCoords, { icon: L.divIcon({ html: '<div style="background-color:#2563eb;width:14px;height:14px;border:3px solid white;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.3)"></div>' }) }).addTo(liveMap);
-                L.marker(destCoords, { icon: L.divIcon({ html: '<div style="background-color:#ef4444;width:14px;height:14px;border:3px solid white;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.3)"></div>' }) }).addTo(liveMap);
+    const savedId = localStorage.getItem('yd_active_order_' + customerAuthUser.id);
+    let result;
 
-                liveDriverMarker = L.marker(driverStart, {
-                    icon: L.divIcon({ className: 'driver-live', html: '<div style="background-color:#1e293b;color:white;padding:6px;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 8px rgba(0,0,0,0.4);font-size:14px;"><i class="fa-solid fa-motorcycle"></i></div>' })
-                }).addTo(liveMap);
+    if (savedId) {
+        result = await db().from('driver_orders').select('*')
+            .eq('id', savedId)
+            .eq('customer_user_id', customerAuthUser.id)
+            .maybeSingle();
+    } else {
+        result = await db().from('driver_orders').select('*')
+            .eq('customer_user_id', customerAuthUser.id)
+            .in('status', ['available', 'assigned'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+    }
 
-                runTripPhases(driverStart, pickupCoords, destCoords);
-            }, 200);
+    if (result.error) {
+        console.error('Gagal memuat pesanan:', result.error.message);
+        return;
+    }
+
+    if (!result.data) {
+        localStorage.removeItem('yd_active_order_' + customerAuthUser.id);
+        return;
+    }
+
+    if (!['available', 'assigned', 'completed'].includes(result.data.status)) {
+        localStorage.removeItem('yd_active_order_' + customerAuthUser.id);
+        return;
+    }
+
+    currentOrder = result.data;
+    localStorage.setItem('yd_active_order_' + customerAuthUser.id, currentOrder.id);
+
+    document.getElementById('pickup-input').value = currentOrder.pickup_address || '';
+    document.getElementById('dest-input').value = currentOrder.destination_address || '';
+
+    pickupCoords = currentOrder.pickup_lat != null && currentOrder.pickup_lng != null
+        ? [Number(currentOrder.pickup_lat), Number(currentOrder.pickup_lng)] : null;
+    destCoords = currentOrder.destination_lat != null && currentOrder.destination_lng != null
+        ? [Number(currentOrder.destination_lat), Number(currentOrder.destination_lng)] : null;
+
+    selectService(currentOrder.service_type || 'ride');
+    document.getElementById('distance-val').innerText = Number(currentOrder.distance_km || 0).toFixed(1);
+    document.getElementById('duration-val').innerText = String(currentOrder.duration_minutes || 0);
+    document.getElementById('fare-val').innerText = money(currentOrder.fare);
+
+    showCustomerOrder();
+
+    if (currentOrder.status === 'completed') {
+        document.getElementById('rating-modal').classList.remove('hidden');
+    } else {
+        startOrderPolling();
+    }
+}
+
+async function refreshCustomerOrderStatus() {
+    if (!currentOrder || !customerAuthUser) return;
+
+    const { data, error } = await db()
+        .from('driver_orders')
+        .select('*')
+        .eq('id', currentOrder.id)
+        .eq('customer_user_id', customerAuthUser.id)
+        .maybeSingle();
+
+    if (error) {
+        console.error('Gagal memperbarui status:', error.message);
+        return;
+    }
+
+    if (!data) return;
+
+    currentOrder = data;
+    updateCustomerOrderStatus(data.status);
+}
+
+function startOrderPolling() {
+    stopOrderPolling();
+    refreshCustomerOrderStatus();
+    statusPollTimer = setInterval(refreshCustomerOrderStatus, 5000);
+}
+
+function stopOrderPolling() {
+    if (statusPollTimer) clearInterval(statusPollTimer);
+    statusPollTimer = null;
+}
+
+async function cancelOrder() {
+    if (!currentOrder || !customerAuthUser) {
+        alert('Tidak ada pesanan aktif.');
+        return;
+    }
+
+    if (!confirm('Batalkan pesanan ini?')) return;
+
+    const { data, error } = await db()
+        .from('driver_orders')
+        .update({ status: 'cancelled' })
+        .eq('id', currentOrder.id)
+        .eq('customer_user_id', customerAuthUser.id)
+        .eq('status', 'available')
+        .is('driver_user_id', null)
+        .select('*')
+        .maybeSingle();
+
+    if (error) {
+        console.error('Pembatalan gagal:', error.message);
+        alert('Pembatalan gagal. Pastikan kebijakan RLS pembatalan telah dibuat di Supabase.');
+        return;
+    }
+
+    if (!data) {
+        await refreshCustomerOrderStatus();
+        alert('Pesanan mungkin sudah diambil driver atau statusnya sudah berubah.');
+        return;
+    }
+
+    currentOrder = data;
+    updateCustomerOrderStatus('cancelled');
+    localStorage.removeItem('yd_active_order_' + customerAuthUser.id);
+    alert('Pesanan berhasil dibatalkan.');
+    resetApp();
+}
+
+function contactDriver() {
+    if (!currentOrder || currentOrder.status !== 'assigned') {
+        alert('Informasi kontak driver tersedia setelah driver menerima pesanan.');
+        return;
+    }
+
+    alert('Pesanan sudah diterima driver. Nomor kontak baru dapat ditampilkan setelah dashboard driver menyimpan nomor telepon yang dapat diakses pelanggan.');
+}
+
+function toggleMinimizePanel() {
+    isMinimized = !isMinimized;
+    document.getElementById('panel-content').classList.toggle('hidden', isMinimized);
+    document.getElementById('minimize-text').innerText = isMinimized ? 'Maximize ▴' : 'Minimize ▾';
+    document.getElementById('bottom-panel').style.transform =
+        isMinimized ? 'translateY(70%)' : 'translateY(0)';
+}
+
+function selectPayment(method) {
+    selectedPaymentMethod = method;
+    document.getElementById('pay-cash').className =
+        method === 'cash'
+        ? 'p-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-xs font-bold'
+        : 'p-2.5 rounded-xl border-2 border-slate-200 text-slate-600 text-xs font-semibold';
+    document.getElementById('pay-qris').className =
+        method === 'qris'
+        ? 'p-2.5 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-xs font-bold'
+        : 'p-2.5 rounded-xl border-2 border-slate-200 text-slate-600 text-xs font-semibold';
+}
+
+function setRating(score) {
+    currentRating = score;
+    document.querySelectorAll('.star-btn').forEach((star, index) => {
+        star.className = index < score
+            ? 'star-btn text-amber-400 text-xl'
+            : 'star-btn text-slate-300 text-xl';
+    });
+}
+
+function completeTripAndReset() {
+    if (!currentOrder || currentOrder.status !== 'completed') {
+        alert('Pembayaran dan ulasan hanya dapat dicatat setelah driver menyelesaikan perjalanan.');
+        return;
+    }
+
+    const review = document.getElementById('trip-review').value.trim();
+    const date = new Date().toLocaleString('id-ID');
+
+    const reviews = readLocal(reviewsKey(), []);
+    reviews.unshift({
+        order_no: currentOrder.order_no,
+        rating: currentRating,
+        review,
+        payment: selectedPaymentMethod,
+        date
+    });
+    localStorage.setItem(reviewsKey(), JSON.stringify(reviews));
+
+    const bookings = readLocal(historyKey(), []);
+    bookings.unshift({
+        service: currentOrder.service_type === 'car' ? 'YourCar' : 'YourRide',
+        pickup: currentOrder.pickup_address,
+        destination: currentOrder.destination_address,
+        fare: money(currentOrder.fare),
+        payment: selectedPaymentMethod,
+        rating: currentRating,
+        review,
+        date
+    });
+    localStorage.setItem(historyKey(), JSON.stringify(bookings));
+
+    document.getElementById('trip-review').value = '';
+    document.getElementById('review-count').innerText = '0';
+    renderBookingHistory();
+
+    alert('Ulasan disimpan di browser ini. Metode pembayaran pilihan: ' + selectedPaymentMethod.toUpperCase() + '.');
+    localStorage.removeItem('yd_active_order_' + customerAuthUser.id);
+    resetApp();
+}
+
+function resetApp() {
+    stopOrderPolling();
+    currentOrder = null;
+    pickupCoords = null;
+    destCoords = null;
+    tempCoords = null;
+    isMinimized = false;
+
+    document.getElementById('bottom-panel').style.transform = 'translateY(0)';
+    document.getElementById('panel-content').classList.remove('hidden');
+    document.getElementById('minimize-text').innerText = 'Minimize ▾';
+    document.getElementById('rating-modal').classList.add('hidden');
+    document.getElementById('active-order-section').classList.add('hidden');
+    document.getElementById('form-section').classList.remove('hidden');
+
+    document.getElementById('pickup-input').value = '';
+    document.getElementById('dest-input').value = '';
+    document.getElementById('pickup-label-status').innerText = 'Pilih di peta...';
+    document.getElementById('dest-label-status').innerText = 'Pilih di peta...';
+    document.getElementById('distance-val').innerText = '0.0';
+    document.getElementById('duration-val').innerText = '0';
+    document.getElementById('fare-val').innerText = 'Rp 0';
+
+    if (liveMap) {
+        liveMap.remove();
+        liveMap = null;
+    }
+    window.customerOrderLayers = null;
+}
+
+function openSettings() {
+    const profile = readLocal(profileKey(), {});
+    document.getElementById('profile-name').value =
+        profile.name || customerAuthUser?.user_metadata?.full_name || '';
+    document.getElementById('profile-phone').value = profile.phone || '';
+    document.getElementById('profile-email').value =
+        profile.email || customerAuthUser?.email || '';
+    renderProfilePhoto(profile.photo || '');
+    renderBookingHistory();
+    document.getElementById('settings-modal').classList.remove('hidden');
+}
+
+function closeSettings() {
+    document.getElementById('settings-modal').classList.add('hidden');
+}
+
+function saveProfile(event) {
+    event.preventDefault();
+
+    const previous = readLocal(profileKey(), {});
+    const profile = {
+        name: document.getElementById('profile-name').value.trim(),
+        phone: document.getElementById('profile-phone').value.trim(),
+        email: document.getElementById('profile-email').value.trim(),
+        photo: previous.photo || ''
+    };
+
+    localStorage.setItem(profileKey(), JSON.stringify(profile));
+    document.getElementById('user-display-name').innerText = profile.name;
+    document.getElementById('profile-heading').innerText = profile.name;
+    alert('Profil disimpan pada browser ini.');
+}
+
+function renderProfilePhoto(photo) {
+    const img = document.getElementById('profile-photo-preview');
+    const placeholder = document.getElementById('profile-photo-placeholder');
+
+    if (photo) {
+        img.src = photo;
+        img.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+    } else {
+        img.removeAttribute('src');
+        img.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+    }
+}
+
+function handleProfilePhoto(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        alert('Pilih file gambar yang valid.');
+        event.target.value = '';
+        return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+        alert('Ukuran foto maksimal 2 MB.');
+        event.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        const profile = readLocal(profileKey(), {});
+        profile.name = profile.name || document.getElementById('profile-name').value.trim();
+        profile.phone = profile.phone || document.getElementById('profile-phone').value.trim();
+        profile.email = profile.email || document.getElementById('profile-email').value.trim();
+        profile.photo = reader.result;
+
+        try {
+            localStorage.setItem(profileKey(), JSON.stringify(profile));
+            renderProfilePhoto(profile.photo);
+            alert('Foto profil berhasil diperbarui.');
+        } catch {
+            alert('Foto tidak dapat disimpan. Coba gambar yang lebih kecil.');
         }
+    };
+    reader.readAsDataURL(file);
+}
 
-        function runTripPhases(driverStart, pickup, destination) {
-            document.getElementById('active-status-title').innerText = "Driver sedang menuju lokasi penjemputan";
-            executeRouteSimulation(driverStart, pickup, function() {
-                document.getElementById('active-status-title').innerText = "Driver Tiba di Penjemputan. Menunggu Penumpang...";
-                setTimeout(function() {
-                    document.getElementById('active-status-title').innerText = "Perjalanan Menuju Lokasi Tujuan";
-                    executeRouteSimulation(pickup, destination, function() {
-                        document.getElementById('active-status-title').innerText = "Tiba di Tujuan 🎉";
-                        document.getElementById('rating-modal').classList.remove('hidden');
-                    });
-                }, 3000);
-            });
-        }
+async function changePassword(event) {
+    event.preventDefault();
 
-        function executeRouteSimulation(startCoord, endCoord, callback) {
-            if (routingControl) liveMap.removeControl(routingControl);
-            routingControl = L.Routing.control({
-                waypoints: [L.latLng(startCoord[0], startCoord[1]), L.latLng(endCoord[0], endCoord[1])],
-                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
-                lineOptions: { styles: [{ color: '#2563eb', opacity: 0.8, weight: 5 }] },
-                addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true
-            }).addTo(liveMap);
+    const current = document.getElementById('current-password').value;
+    const next = document.getElementById('new-password').value;
+    const confirmNext = document.getElementById('confirm-password').value;
+    const status = document.getElementById('security-status');
 
-            routingControl.on('routesfound', function(e) {
-                const coords = e.routes[0].coordinates;
-                let index = 0;
-                function move() {
-                    if (index < coords.length) {
-                        liveDriverMarker.setLatLng([coords[index].lat, coords[index].lng]);
-                        index++;
-                        setTimeout(move, 40);
-                    } else if (callback) { callback(); }
-                }
-                move();
-            });
-        }
+    if (next.length < 8) {
+        alert('Kata sandi baru minimal 8 karakter.');
+        return;
+    }
+    if (next !== confirmNext) {
+        alert('Konfirmasi kata sandi baru tidak cocok.');
+        return;
+    }
+    if (!customerAuthUser?.email) {
+        alert('Email akun tidak tersedia.');
+        return;
+    }
 
-        function cancelOrder() { if (confirm("Batalkan pesanan?")) resetApp(); }
-        function completeTripAndReset() {
-            const review = document.getElementById('trip-review').value.trim();
-            const reviews = JSON.parse(localStorage.getItem('yd_reviews_' + loggedUser) || '[]');
-            reviews.unshift({
-                rating: currentRating,
-                review,
-                payment: selectedPaymentMethod,
-                date: new Date().toLocaleString('id-ID')
-            });
-            localStorage.setItem('yd_reviews_' + loggedUser, JSON.stringify(reviews));
-            const bookings = JSON.parse(localStorage.getItem('yd_booking_history_' + loggedUser) || '[]');
-            bookings.unshift({
-                service: document.querySelector('#submit-btn span').innerText.replace('Pesan ', '').replace(' Sekarang', ''),
-                pickup: document.getElementById('pickup-input').value,
-                destination: document.getElementById('dest-input').value,
-                fare: document.getElementById('fare-val').innerText,
-                payment: selectedPaymentMethod,
-                rating: currentRating,
-                review,
-                date: new Date().toLocaleString('id-ID')
-            });
-            localStorage.setItem('yd_booking_history_' + loggedUser, JSON.stringify(bookings));
-            alert(`Pembayaran via ${selectedPaymentMethod.toUpperCase()} berhasil! Rating ${currentRating} bintang dan ulasan disimpan.`);
-            document.getElementById('trip-review').value = '';
-            document.getElementById('review-count').innerText = '0';
-            resetApp();
-        }
+    const { error: verifyError } = await db().auth.signInWithPassword({
+        email: customerAuthUser.email,
+        password: current
+    });
 
-        function resetApp() {
-            isMinimized = false;
-            document.getElementById('bottom-panel').style.transform = "translateY(0)";
-            document.getElementById('panel-content').classList.remove('hidden');
-            document.getElementById('minimize-text').innerText = "Minimize ▾";
-            document.getElementById('rating-modal').classList.add('hidden');
-            document.getElementById('active-order-section').classList.add('hidden');
-            document.getElementById('form-section').classList.remove('hidden');
-            document.getElementById('pickup-input').value = "";
-            document.getElementById('dest-input').value = "";
-            document.getElementById('pickup-label-status').innerText = "Ketik alamat atau pilih peta";
-            document.getElementById('dest-label-status').innerText = "Ketik alamat atau pilih peta";
-            document.getElementById('distance-val').innerText = "0.0";
-            document.getElementById('duration-val').innerText = "0";
-            document.getElementById('fare-val').innerText = "Rp 0";
-            pickupCoords = null; destCoords = null; tempCoords = null;
-            if (pickerMarker && pickerMap) pickerMap.removeLayer(pickerMarker);
-            if (routingControl && liveMap) liveMap.removeControl(routingControl);
-        }
-    </script>
+    if (verifyError) {
+        status.innerText = 'Kata sandi saat ini tidak cocok.';
+        status.className = 'text-xs font-semibold text-red-600';
+        status.classList.remove('hidden');
+        return;
+    }
+
+    const { error } = await db().auth.updateUser({ password: next });
+
+    if (error) {
+        status.innerText = 'Gagal mengubah kata sandi: ' + error.message;
+        status.className = 'text-xs font-semibold text-red-600';
+    } else {
+        document.getElementById('password-form').reset();
+        status.innerText = 'Kata sandi akun berhasil diubah.';
+        status.className = 'text-xs font-semibold text-emerald-700';
+    }
+    status.classList.remove('hidden');
+}
+
+function renderBookingHistory() {
+    const list = document.getElementById('booking-history-list');
+    const history = readLocal(historyKey(), []);
+
+    if (!history.length) {
+        list.innerHTML = '<p class="text-[10px] text-slate-400">Belum ada riwayat pemesanan selesai.</p>';
+        return;
+    }
+
+    list.innerHTML = history.map(item => `
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="flex justify-between gap-2"><b class="text-[11px]">${escapeHTML(item.service)}</b><span class="text-[9px] text-emerald-700 font-bold">Selesai</span></div>
+            <p class="text-[10px] text-slate-500 mt-1">${escapeHTML(item.date)}</p>
+            <p class="text-[10px] text-slate-600 mt-1">Dari: ${escapeHTML(item.pickup)}</p>
+            <p class="text-[10px] text-slate-600">Ke: ${escapeHTML(item.destination)}</p>
+            <p class="text-[10px] font-bold text-blue-700 mt-1">${escapeHTML(item.fare)} · ${escapeHTML((item.payment || '').toUpperCase())}</p>
+            <p class="text-[10px] text-amber-500 mt-1">${'★'.repeat(Number(item.rating) || 0)}${'☆'.repeat(5 - (Number(item.rating) || 0))} <span class="text-slate-500">${escapeHTML(item.review || '')}</span></p>
+        </div>`).join('');
+}
+
+function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[char]));
+}
+
+function submitSuggestion(event) {
+    event.preventDefault();
+    const suggestions = readLocal(suggestionsKey(), []);
+
+    suggestions.unshift({
+        category: document.getElementById('suggestion-category').value,
+        text: document.getElementById('suggestion-text').value.trim(),
+        date: new Date().toLocaleString('id-ID')
+    });
+
+    localStorage.setItem(suggestionsKey(), JSON.stringify(suggestions));
+    document.getElementById('suggestion-text').value = '';
+
+    const status = document.getElementById('suggestion-status');
+    status.innerText = 'Saran tersimpan di browser ini.';
+    status.classList.remove('hidden');
+}
+
+function showSavedReviews() {
+    const reviews = readLocal(reviewsKey(), []);
+    showHistory(reviews.map(r =>
+        `${r.date} — ${r.rating}/5 bintang\n${r.review || '(tanpa komentar)'}`
+    ).join('\n\n'), 'Belum ada ulasan tersimpan.');
+}
+
+function showSavedSuggestions() {
+    const suggestions = readLocal(suggestionsKey(), []);
+    showHistory(suggestions.map(r =>
+        `${r.date} — ${r.category}\n${r.text}`
+    ).join('\n\n'), 'Belum ada saran tersimpan.');
+}
+
+function showHistory(content, emptyMessage) {
+    const box = document.getElementById('settings-history');
+    box.textContent = content || emptyMessage;
+    box.classList.remove('hidden');
+}
+
+async function handleLogout() {
+    if (!confirm('Apakah Anda ingin keluar dari akun?')) return;
+
+    stopOrderPolling();
+
+    const { error } = await db().auth.signOut();
+
+    if (error) {
+        alert('Gagal keluar dari akun: ' + error.message);
+        return;
+    }
+
+    localStorage.removeItem('yd_logged_in_user');
+    window.location.replace('login.html');
+}
+
+initializeCustomer();
+</script>
 </body>
 </html>
