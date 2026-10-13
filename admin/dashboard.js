@@ -1,21 +1,32 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
   const db = window.ydSupabase;
-
   const $ = (selector) => document.querySelector(selector);
+
   const applicantsBody = $("#applicantsBody");
   const ordersBody = $("#ordersBody");
   const activityBody = $("#activityBody");
-  const msg = $("#dashboardMessage");
 
-  const say = (text) => { msg.textContent = text || ""; };
-  const sayOrders = (text) => { $("#ordersMessage").textContent = text || ""; };
-  const sayActivity = (text) => { $("#activityMessage").textContent = text || ""; };
+  const say = (text) => {
+    $("#dashboardMessage").textContent = text || "";
+  };
 
-  const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;",
-    '"': "&quot;", "'": "&#39;"
-  }[c]));
+  const sayOrders = (text) => {
+    $("#ordersMessage").textContent = text || "";
+  };
+
+  const sayActivity = (text) => {
+    $("#activityMessage").textContent = text || "";
+  };
+
+  const esc = (value) =>
+    String(value ?? "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[c]));
 
   const labels = {
     pending: "Menunggu",
@@ -38,16 +49,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     system: "Sistem"
   };
 
+  const viewInfo = {
+    dashboard: {
+      title: "Dashboard Admin",
+      subtitle: "Pantau kondisi sistem dan aktivitas terbaru."
+    },
+    drivers: {
+      title: "Pengaturan Driver",
+      subtitle: "Verifikasi pendaftaran dan periksa dokumen driver."
+    },
+    customers: {
+      title: "Pengaturan Pelanggan",
+      subtitle: "Pengelolaan akun pelanggan dan pemulihan akses."
+    },
+    orders: {
+      title: "Pesanan",
+      subtitle: "Pantau status dan penugasan pesanan."
+    },
+    security: {
+      title: "Keamanan",
+      subtitle: "Periksa kontrol akses dan log aktivitas."
+    },
+    reports: {
+      title: "Laporan",
+      subtitle: "Laporan operasional harian, mingguan, dan bulanan."
+    }
+  };
+
   let rows = [];
   let orderRows = [];
+  let currentView = "dashboard";
 
   if (!db) {
     say("Konfigurasi Supabase belum diisi.");
     return;
   }
 
-  // Pastikan pengguna sudah login.
-  const { data: sessionData, error: authError } = await db.auth.getUser();
+  // Verifikasi sesi pengguna.
+  const { data: sessionData, error: authError } =
+    await db.auth.getUser();
+
   const user = sessionData?.user;
 
   if (authError || !user) {
@@ -55,7 +96,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // Hanya akun dalam admin_users yang boleh masuk.
+  // Hanya akun yang terdaftar pada admin_users boleh masuk.
   const { data: admin, error: adminError } = await db
     .from("admin_users")
     .select("user_id")
@@ -70,7 +111,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function formatDate(value) {
     if (!value) return "—";
+
     const date = new Date(value);
+
     return Number.isNaN(date.getTime())
       ? "—"
       : date.toLocaleString("id-ID");
@@ -84,8 +127,69 @@ document.addEventListener("DOMContentLoaded", async () => {
     }).format(Number(value) || 0);
   }
 
+  function setText(selector, value) {
+    const element = $(selector);
+    if (element) element.textContent = value;
+  }
+
   // =========================
-  // PENDAFTARAN DRIVER
+  // NAVIGASI SIDEBAR
+  // =========================
+  function showView(viewName) {
+    if (!viewInfo[viewName]) return;
+
+    currentView = viewName;
+
+    document.querySelectorAll(".admin-view").forEach((view) => {
+      view.classList.toggle(
+        "hidden",
+        view.id !== `view-${viewName}`
+      );
+    });
+
+    document.querySelectorAll(".admin-nav [data-view]").forEach((button) => {
+      const active = button.dataset.view === viewName;
+      button.classList.toggle("active", active);
+
+      if (active) {
+        button.setAttribute("aria-current", "page");
+      } else {
+        button.removeAttribute("aria-current");
+      }
+    });
+
+    setText("#pageTitle", viewInfo[viewName].title);
+    setText("#pageSubtitle", viewInfo[viewName].subtitle);
+
+    // Tutup detail agar tidak tertinggal saat berpindah menu.
+    if (viewName !== "drivers") {
+      $("#detailPanel").classList.add("hidden");
+    }
+
+    // Pada layar kecil, kembali ke bagian atas konten.
+    if (window.matchMedia("(max-width: 700px)").matches) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    button.addEventListener("click", () => {
+      showView(button.dataset.view);
+    });
+  });
+
+  setText(
+    "#adminDate",
+    new Date().toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    })
+  );
+
+  // =========================
+  // DASHBOARD / DRIVER
   // =========================
   async function refreshApplicants() {
     applicantsBody.innerHTML =
@@ -99,19 +203,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (error) {
       applicantsBody.innerHTML =
         '<tr><td colspan="6">Data pendaftar gagal dimuat.</td></tr>';
+
       say("Gagal memuat pendaftar: " + error.message);
+      setText("#dashDriverTotal", "—");
+      setText("#dashDriverPending", "—");
       return;
     }
 
     rows = data || [];
 
-    $("#totalCount").textContent = rows.length;
-    $("#pendingCount").textContent =
-      rows.filter((r) => r.status === "pending").length;
-    $("#acceptedCount").textContent =
-      rows.filter((r) => r.status === "accepted").length;
-    $("#rejectedCount").textContent =
-      rows.filter((r) => r.status === "rejected").length;
+    const pending = rows.filter((r) => r.status === "pending").length;
+    const accepted = rows.filter((r) => r.status === "accepted").length;
+    const rejected = rows.filter((r) => r.status === "rejected").length;
+
+    setText("#totalCount", rows.length);
+    setText("#pendingCount", pending);
+    setText("#acceptedCount", accepted);
+    setText("#rejectedCount", rejected);
+
+    setText("#dashDriverTotal", rows.length);
+    setText("#dashDriverPending", pending);
 
     renderApplicants();
     say("");
@@ -119,13 +230,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function renderApplicants() {
     const filter = $("#statusFilter").value;
-    const list = rows.filter((r) =>
-      filter === "all" || r.status === filter
-    );
+    const query = ($("#driverSearch").value || "").trim().toLowerCase();
+
+    const list = rows.filter((r) => {
+      const matchesStatus =
+        filter === "all" || r.status === filter;
+
+      const searchable = [
+        r.full_name,
+        r.email,
+        r.registration_no,
+        r.whatsapp,
+        r.address
+      ].join(" ").toLowerCase();
+
+      return matchesStatus && searchable.includes(query);
+    });
 
     if (!list.length) {
       applicantsBody.innerHTML =
-        '<tr><td colspan="6">Belum ada pendaftar untuk filter ini.</td></tr>';
+        '<tr><td colspan="6">Tidak ada pendaftar yang cocok.</td></tr>';
       return;
     }
 
@@ -146,9 +270,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           <small>SIM: ${esc(r.sim_number)}</small>
         </td>
         <td>
-          <button class="text-btn" data-doc="photo_path" data-id="${esc(r.id)}">Foto</button> ·
-          <button class="text-btn" data-doc="ktp_path" data-id="${esc(r.id)}">KTP</button> ·
-          <button class="text-btn" data-doc="sim_path" data-id="${esc(r.id)}">SIM</button>
+          <button class="text-btn" data-doc="photo_path"
+                  data-id="${esc(r.id)}" type="button">Foto</button> ·
+          <button class="text-btn" data-doc="ktp_path"
+                  data-id="${esc(r.id)}" type="button">KTP</button> ·
+          <button class="text-btn" data-doc="sim_path"
+                  data-id="${esc(r.id)}" type="button">SIM</button>
         </td>
         <td>
           <span class="pill ${esc(r.status)}">
@@ -156,11 +283,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           </span>
         </td>
         <td>
-          <button class="btn btn-small btn-light" data-detail="${esc(r.id)}">Detail</button>
+          <button class="btn btn-small btn-light"
+                  data-detail="${esc(r.id)}" type="button">Detail</button>
           <select data-status="${esc(r.id)}"
                   aria-label="Ubah status ${esc(r.full_name)}">
             ${Object.entries(labels).map(([value, label]) => `
-              <option value="${value}" ${r.status === value ? "selected" : ""}>
+              <option value="${value}"
+                ${r.status === value ? "selected" : ""}>
                 ${label}
               </option>
             `).join("")}
@@ -170,15 +299,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     `).join("");
   }
 
-  // Buka dokumen privat menggunakan URL sementara.
   applicantsBody.addEventListener("click", async (event) => {
     const docButton = event.target.closest("[data-doc]");
 
     if (docButton) {
-      const applicant = rows.find((r) => r.id === docButton.dataset.id);
+      const applicant = rows.find(
+        (r) => r.id === docButton.dataset.id
+      );
+
       if (!applicant) return;
 
       const path = applicant[docButton.dataset.doc];
+
       if (!path) {
         say("Lokasi dokumen belum tersedia.");
         return;
@@ -193,7 +325,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (error) throw error;
 
-        window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+        window.open(
+          data.signedUrl,
+          "_blank",
+          "noopener,noreferrer"
+        );
+
         say("");
       } catch (error) {
         say("Dokumen gagal dibuka: " + error.message);
@@ -207,7 +344,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const detailButton = event.target.closest("[data-detail]");
     if (!detailButton) return;
 
-    const r = rows.find((item) => item.id === detailButton.dataset.detail);
+    const r = rows.find(
+      (item) => item.id === detailButton.dataset.detail
+    );
+
     if (!r) return;
 
     $("#detailContent").innerHTML = `
@@ -231,7 +371,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const select = event.target.closest("[data-status]");
     if (!select) return;
 
-    const applicant = rows.find((r) => r.id === select.dataset.status);
+    const applicant = rows.find(
+      (r) => r.id === select.dataset.status
+    );
+
     if (!applicant) return;
 
     const previousStatus = applicant.status;
@@ -259,12 +402,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     say("Status pendaftaran berhasil diperbarui.");
+
     await refreshApplicants();
     await refreshActivity();
   });
 
   // =========================
-  // PEMANTAUAN PESANAN
+  // PESANAN
   // =========================
   async function refreshOrders() {
     ordersBody.innerHTML =
@@ -278,28 +422,64 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (error) {
       ordersBody.innerHTML =
         '<tr><td colspan="7">Data pesanan gagal dimuat.</td></tr>';
+
       sayOrders("Gagal memuat pesanan: " + error.message);
+      setText("#dashOrderTotal", "—");
+      setText("#dashOrderCompleted", "—");
       return;
     }
 
     orderRows = data || [];
 
-    $("#ordersTotal").textContent = orderRows.length;
-    $("#ordersAvailable").textContent =
-      orderRows.filter((r) => r.status === "available").length;
-    $("#ordersAssigned").textContent =
-      orderRows.filter((r) => r.status === "assigned").length;
-    $("#ordersCompleted").textContent =
-      orderRows.filter((r) => r.status === "completed").length;
+    const available = orderRows.filter(
+      (r) => r.status === "available"
+    ).length;
 
-    if (!orderRows.length) {
+    const assigned = orderRows.filter(
+      (r) => r.status === "assigned"
+    ).length;
+
+    const completed = orderRows.filter(
+      (r) => r.status === "completed"
+    ).length;
+
+    setText("#ordersTotal", orderRows.length);
+    setText("#ordersAvailable", available);
+    setText("#ordersAssigned", assigned);
+    setText("#ordersCompleted", completed);
+
+    setText("#dashOrderTotal", orderRows.length);
+    setText("#dashOrderCompleted", completed);
+
+    renderOrders();
+    sayOrders("");
+  }
+
+  function renderOrders() {
+    const query = ($("#orderSearch").value || "").trim().toLowerCase();
+    const filter = $("#orderStatusFilter").value;
+
+    const list = orderRows.filter((r) => {
+      const matchesStatus =
+        filter === "all" || r.status === filter;
+
+      const searchable = [
+        r.order_no,
+        r.pickup_address,
+        r.destination_address,
+        r.driver_user_id
+      ].join(" ").toLowerCase();
+
+      return matchesStatus && searchable.includes(query);
+    });
+
+    if (!list.length) {
       ordersBody.innerHTML =
-        '<tr><td colspan="7">Belum ada pesanan di database.</td></tr>';
-      sayOrders("");
+        '<tr><td colspan="7">Tidak ada pesanan yang cocok.</td></tr>';
       return;
     }
 
-    ordersBody.innerHTML = orderRows.map((r) => `
+    ordersBody.innerHTML = list.map((r) => `
       <tr>
         <td><strong>${esc(r.order_no)}</strong></td>
         <td>${esc(r.pickup_address)}</td>
@@ -310,12 +490,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             ${esc(orderLabels[r.status] || r.status)}
           </span>
         </td>
-        <td>${r.driver_user_id ? esc(r.driver_user_id) : "Belum diambil"}</td>
+        <td>
+          ${r.driver_user_id
+            ? esc(r.driver_user_id)
+            : "Belum diambil"}
+        </td>
         <td>${esc(formatDate(r.assigned_at || r.created_at))}</td>
       </tr>
     `).join("");
-
-    sayOrders("");
   }
 
   // =========================
@@ -327,15 +509,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const { data, error } = await db
       .from("activity_logs")
-      .select("id,actor_user_id,actor_role,action,entity_type,entity_id,description,created_at")
+      .select(
+        "id,actor_user_id,actor_role,action,entity_type,entity_id,description,created_at"
+      )
       .order("created_at", { ascending: false })
       .limit(100);
 
     if (error) {
       activityBody.innerHTML =
         '<tr><td colspan="5">Log aktivitas belum dapat dimuat.</td></tr>';
+
       sayActivity(
-        "Jalankan SQL tambahan log aktivitas terlebih dahulu. " +
+        "Log belum tersedia. Periksa tabel activity_logs dan kebijakan akses. " +
         "Detail: " + error.message
       );
       return;
@@ -344,7 +529,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!data || data.length === 0) {
       activityBody.innerHTML =
         '<tr><td colspan="5">Belum ada aktivitas tercatat.</td></tr>';
-      sayActivity("Aktivitas baru akan muncul setelah ada kejadian yang tercatat.");
+
+      sayActivity("Belum ada aktivitas yang tercatat.");
       return;
     }
 
@@ -355,35 +541,54 @@ document.addEventListener("DOMContentLoaded", async () => {
         <td>
           <strong>${esc(r.action)}</strong>
           <small>${esc(r.description)}</small>
-          <small>${r.actor_user_id ? "Akun: " + esc(r.actor_user_id) : "Akun sistem"}</small>
+          <small>
+            ${r.actor_user_id
+              ? "Akun: " + esc(r.actor_user_id)
+              : "Akun sistem"}
+          </small>
         </td>
         <td>${esc(r.entity_type)}</td>
         <td>${esc(r.entity_id)}</td>
       </tr>
     `).join("");
 
-    sayActivity("Menampilkan " + data.length + " aktivitas terbaru.");
+    sayActivity(
+      "Menampilkan " + data.length + " aktivitas terbaru."
+    );
   }
 
   // =========================
-  // TOMBOL DAN FILTER
+  // TOMBOL, FILTER, DAN LOGOUT
   // =========================
   $("#statusFilter").addEventListener("change", renderApplicants);
+  $("#driverSearch").addEventListener("input", renderApplicants);
+
   $("#refreshBtn").addEventListener("click", refreshApplicants);
   $("#refreshOrdersBtn").addEventListener("click", refreshOrders);
   $("#refreshActivityBtn").addEventListener("click", refreshActivity);
+
+  $("#orderSearch").addEventListener("input", renderOrders);
+  $("#orderStatusFilter").addEventListener("change", renderOrders);
 
   $("#closeDetail").addEventListener("click", () => {
     $("#detailPanel").classList.add("hidden");
   });
 
   $("#logoutBtn").addEventListener("click", async () => {
-    await db.auth.signOut();
-    location.href = "./login.html";
+    $("#logoutBtn").disabled = true;
+
+    try {
+      await db.auth.signOut();
+    } finally {
+      location.href = "./login.html";
+    }
   });
 
-  // Muat setiap bagian secara independen agar satu error
-  // tidak menghentikan bagian dashboard lainnya.
+  // Tampilkan dashboard setelah verifikasi akses selesai.
+  showView("dashboard");
+
+  // Setiap bagian dimuat secara independen.
+  // Kegagalan log tidak menghentikan pemuatan driver/pesanan.
   await Promise.allSettled([
     refreshApplicants(),
     refreshOrders(),
