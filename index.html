@@ -50,12 +50,12 @@
                 </div>
 
                 <!-- Pilihan Layanan -->
-                <div class="grid grid-cols-3 gap-2.5 mb-5">
-                    <button type="button" onclick="selectService('ride')" id="btn-ride" class="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-blue-600 bg-blue-50/40 transition shadow-sm">
+                <div class="grid grid-cols-2 gap-2.5 mb-5 w-full">
+                    <button type="button" onclick="selectService('ride')" id="btn-ride" class="w-full min-w-0 flex flex-col items-center justify-center p-3 rounded-xl border-2 border-blue-600 bg-blue-50/40 transition shadow-sm">
                         <i class="fa-solid fa-motorcycle text-blue-600 text-base mb-1"></i>
                         <span class="text-[11px] font-bold text-slate-700">YourRide</span>
                     </button>
-                    <button type="button" onclick="selectService('car')" id="btn-car" class="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 transition">
+                    <button type="button" onclick="selectService('car')" id="btn-car" class="w-full min-w-0 flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 transition">
                         <i class="fa-solid fa-car text-slate-500 text-base mb-1"></i>
                         <span class="text-[11px] font-semibold text-slate-600">YourCar</span>
                     </button>
@@ -490,12 +490,12 @@
         function selectService(type) {
             ['ride', 'car'].forEach(t => {
                 const btn = document.getElementById(`btn-${t}`);
-                btn.className = "flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 transition";
+                btn.className = "w-full min-w-0 flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 transition";
                 btn.querySelector('i').className = btn.querySelector('i').className.replace('text-blue-600', 'text-slate-500');
                 btn.querySelector('span').className = "text-[11px] font-semibold text-slate-600";
             });
             const activeBtn = document.getElementById(`btn-${type}`);
-            activeBtn.className = "flex flex-col items-center justify-center p-3 rounded-xl border-2 border-blue-600 bg-blue-50/40 transition shadow-sm";
+            activeBtn.className = "w-full min-w-0 flex flex-col items-center justify-center p-3 rounded-xl border-2 border-blue-600 bg-blue-50/40 transition shadow-sm";
             activeBtn.querySelector('i').className = activeBtn.querySelector('i').className.replace('text-slate-500', 'text-blue-600');
             activeBtn.querySelector('span').className = "text-[11px] font-bold text-slate-700";
             document.querySelector('#submit-btn span').innerText = `Pesan Your${type.charAt(0).toUpperCase() + type.slice(1)} Sekarang`;
