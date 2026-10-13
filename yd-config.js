@@ -1,5 +1,5 @@
 
-/* YourDriver — Supabase configuration */
+/* Ngojek — Supabase configuration */
 window.YD_SUPABASE_URL =
   "https://igxwfvlapkanllhuydwp.supabase.co";
 
