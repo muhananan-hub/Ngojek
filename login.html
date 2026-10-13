@@ -61,6 +61,17 @@
                         <i class="fa-solid fa-arrow-right text-xs"></i>
                     </button>
                 </form>
+
+                <!-- Login / daftar dengan akun sosial -->
+                <div class="my-5 flex items-center gap-3 text-[10px] text-slate-400">
+                    <span class="h-px flex-1 bg-slate-200"></span><span>atau lanjutkan dengan</span><span class="h-px flex-1 bg-slate-200"></span>
+                </div>
+                <div class="space-y-2">
+                    <button type="button" onclick="socialLogin('google')" class="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"><i class="fa-brands fa-google"></i> Login dengan Google</button>
+                    <button type="button" onclick="socialLogin('facebook')" class="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-xs font-bold text-white hover:bg-blue-700 transition"><i class="fa-brands fa-facebook-f"></i> Login dengan Facebook</button>
+                    <button type="button" onclick="socialLogin('instagram')" class="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold text-white transition hover:opacity-90" style="background:linear-gradient(105deg,#833ab4 0%,#e1306c 48%,#fc8b2d 100%)"><i class="fa-brands fa-instagram"></i> Login dengan Instagram</button>
+                </div>
+                <p class="mt-2 text-center text-[9px] leading-relaxed text-slate-400">Login sosial memerlukan konfigurasi OAuth pada Supabase dan penyedia terkait.</p>
             </div>
 
             <div class="pt-6 text-center border-t border-slate-100 mt-6">
@@ -109,5 +120,36 @@
             }
         }
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Isi kedua nilai ini dari Project Settings > API di dashboard Supabase.
+        // Jangan gunakan service_role key di browser; gunakan publishable/anon key.
+        const SUPABASE_URL = 'MASUKKAN_SUPABASE_PROJECT_URL';
+        const SUPABASE_PUBLISHABLE_KEY = 'MASUKKAN_SUPABASE_PUBLISHABLE_KEY';
+
+        async function socialLogin(provider) {
+            if (provider === 'instagram') {
+                alert('Login Instagram belum dapat diaktifkan langsung melalui penyedia OAuth standar Supabase. Perlu integrasi Meta/Instagram OAuth khusus di backend.');
+                return;
+            }
+            if (!window.supabase || SUPABASE_URL.startsWith('MASUKKAN_') || SUPABASE_PUBLISHABLE_KEY.startsWith('MASUKKAN_')) {
+                alert('Login sosial belum dikonfigurasi. Isi SUPABASE_URL dan SUPABASE_PUBLISHABLE_KEY di file HTML, lalu aktifkan provider Google/Facebook di Supabase.');
+                return;
+            }
+            try {
+                const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+                const { error } = await client.auth.signInWithOAuth({
+                    provider,
+                    options: { redirectTo: window.location.origin + '/index.html' }
+                });
+                if (error) throw error;
+            } catch (error) {
+                console.error('OAuth error:', error);
+                alert('Login sosial gagal dimulai: ' + (error.message || 'Periksa konfigurasi OAuth Supabase.'));
+            }
+        }
+    </script>
+
 </body>
 </html>
